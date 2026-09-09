@@ -1,4 +1,18 @@
 {
-  "maxOpenMessagesPerChannel": 5000,
-  "maxTranscriptMessagesPerChannel": 10000
+  "guildId": "1525392083924549682",
+  "ticketViewerRoleIds": [
+    "1525460665198968832",
+    "1525460819381587988",
+    "1525872687451209810"
+  ],
+  "ticketPrefixes": {
+    "Report": "report-ticket",
+    "Ban Appeal": "banapeal-ticket",
+    "Suggestion": "suggestion",
+    "Server Boost": "boostclaim",
+    "Donation": "donation-ticket"
+  },
+  "mainTranscriptChannelId": "1531349051998732349",
+  "maxOpenMessagesPerChannel": 1000,
+  "maxTranscriptMessagesPerChannel": 1000
 }
