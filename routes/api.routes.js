@@ -5,15 +5,12 @@ const schoolTicketController = require('../controllers/schoolTicket.controller')
 const ticketReadController = require('../controllers/ticketRead.controller');
 const ticketSummaryController = require('../controllers/ticketSummary.controller');
 const transcriptController = require('../controllers/transcript.controller');
-const importController = require('../controllers/import.controller');
 const staffController = require('../controllers/staff.controller');
-const whitelistController = require('../controllers/whitelist.controller');
 const staffPerformanceController = require('../controllers/staffPerformance.controller');
 const accessLogsController = require('../controllers/accessLogs.controller');
-const backupCenterController = require('../controllers/backupCenter.controller');
 const mediaController = require('../controllers/media.controller');
 const staffManagementController = require('../controllers/staffManagement.controller');
-const { requirePanelOwner, requirePanelOwnerHidden } = require('../middleware/owner.middleware');
+const { requirePanelOwnerHidden } = require('../middleware/owner.middleware');
 const { requireStaffPerformanceAccess } = require('../middleware/staffPerformance.middleware');
 const { requireMediaManager } = require('../middleware/mediaManager.middleware');
 const { requireStaffManagerHidden } = require('../middleware/staffManagement.middleware');
@@ -60,29 +57,5 @@ router.delete('/staff-management/:discordId', requireStaffManagerHidden, staffMa
 router.get('/media/settings', mediaController.getSettings);
 router.put('/media/:slot', requireMediaManager, mediaUploadParser, mediaController.upload);
 router.delete('/media/:slot', requireMediaManager, mediaController.reset);
-
-// Read-only Whitelist Center. Authentication and CSRF handling are applied in server.js.
-router.get('/whitelist/stats', whitelistController.stats);
-router.get('/whitelist/lookup', whitelistController.lookup);
-router.get('/whitelist/profile/:discordId', whitelistController.profile);
-router.get('/whitelist/pending', whitelistController.listPending);
-router.get('/whitelist/whitelisted', whitelistController.listWhitelisted);
-
-router.get('/import/status', requirePanelOwner, importController.getImportStatus);
-router.post('/import/category/:category', requirePanelOwner, importController.startCategoryImport);
-
-// Legacy recovery endpoints are kept for compatibility but are no longer shown in the panel UI.
-router.post('/import/open', requirePanelOwner, importController.startOpenImport);
-router.post('/import/closed', requirePanelOwner, importController.startClosedImport);
-router.post('/import/all', requirePanelOwner, importController.startFullDiscordImport);
-router.get('/import/jobs/:id', requirePanelOwner, importController.getImportJob);
-
-router.get('/backup/status', requirePanelOwner, backupCenterController.getStatus);
-router.post('/backup/gatekeeper', requirePanelOwner, backupCenterController.startFullBackup);
-router.get('/backup/gatekeeper/:id', requirePanelOwner, backupCenterController.getBackupJob);
-router.get('/backup/gatekeeper/:id/download', requirePanelOwner, backupCenterController.downloadBackup);
-router.post('/backup/clear-databases', requirePanelOwner, backupCenterController.clearDatabases);
-router.get('/backup/json', requirePanelOwner, apiController.exportBackupJSON);
-router.get('/backup/zip', requirePanelOwner, apiController.exportBackupZIP);
 
 module.exports = router;
