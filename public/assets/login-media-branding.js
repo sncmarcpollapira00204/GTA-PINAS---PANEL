@@ -4,6 +4,8 @@
   let backgroundVideo = null;
   let mediaPromise = null;
 
+  document.title = 'GTA Pinas Web Panel';
+
   function shouldPlayBackground() {
     return !document.hidden;
   }
@@ -93,8 +95,8 @@
     const watermark = document.querySelector('.ost-watermark');
     if (watermark) {
       watermark.textContent = asset.isDefault
-        ? '5th Avenue OST by Joji'
-        : (asset.originalName || '5th Avenue Web Music');
+        ? 'GTA Pinas OST'
+        : (asset.originalName || 'GTA Pinas Web Music');
     }
   }
 
