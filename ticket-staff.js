@@ -16,22 +16,17 @@ module.exports = {
     },
 
     ticketAssignOptions: [
-        { label: 'MATEO', userId: '401018838755573761', categoryId: '1505162819065221130', description: 'Junior Council' },
-        { label: 'CROSS', userId: '693694142777393215', categoryId: '1505162470224953394', description: 'Sophomore Council' },
-        { label: 'KAYE', userId: '737224265639919667', categoryId: '1505162470224953394', description: 'Sophomore Council' },
-        { label: 'KAI', userId: '425645298598019073', categoryId: '1505162470224953394', description: 'Freshmen Council' },
-        { label: 'LINZIE', userId: '416172683554979843', categoryId: '1505162819065221130', description: 'Freshmen Council' },
-        { label: 'ETHAN', userId: '1495264845044519052', categoryId: '1505162819065221130', description: 'Freshmen Council' },
-        { label: 'DANI', userId: '855113860938727436', categoryId: '1505162371499298877', description: 'Sophomore Council' },
-        { label: 'HAERIN', userId: '713743993472549016', categoryId: '1505162371499298877', description: 'Sophomore Council' },
-        { label: 'LUPIN', userId: '735045975378362401', categoryId: '1505162371499298877', description: 'Sophomore Council' },
-        { label: 'JAP', userId: '1318552484330864712', categoryId: '1505162218583625818', description: 'Executives Council' },
-        { label: 'KEIAN', userId: '711906191634333788', categoryId: '1505162218583625818', description: 'Sophomore Council' },
-        { label: 'KAEDI', userId: '782906417488592938', categoryId: '1505162218583625818', description: 'Sophomore Council' },
-        { label: 'RORA', userId: '666399346513805331', categoryId: '1505162102782824639', description: 'Owner' },
-        { label: 'MIKA', userId: '1227221233570152524', categoryId: '1505162102782824639', description: 'Executives Council' },
-        { label: 'SESE', userId: '1007877981215137834', categoryId: '1505162102782824639', description: 'Executives Council' },
-        { label: 'YUU', userId: '411941548733890561', categoryId: '1505162102782824639', description: 'Owner' },
-        { label: 'JOJI', userId: '694503130129236068', categoryId: '1505162102782824639', description: 'Executives Council' }
+        { label: 'YORME', userId: '852940366230323250', categoryId: '1505162819065221130', description: 'FACTION MODERATOR' },
+        { label: 'ASTRIA', userId: '862348507863449631', categoryId: '1505162819065221130', description: 'ADMIN' },
+        { label: 'BALONG', userId: '782877398860562472', categoryId: '1505162742951186542', description: 'MAPPING TEAM' },
+        { label: 'BROMINE', userId: '474487966539055104', categoryId: '1505162742951186542', description: 'GANG MODERATOR' },
+        { label: 'DIZEUCE', userId: '311658010906984448', categoryId: '1505162470224953394', description: 'GANG MODERATOR' },
+        { label: 'GUILLOTINE', userId: '992789429343223828', categoryId: '1505162470224953394', description: 'FACTION MODERATOR' },
+        { label: 'GYDEON', userId: '692015347192299560', categoryId: '1505162371499298877', description: 'MAPPING TEAM' },
+        { label: 'QUINTILIAN', userId: '217260561224695808', categoryId: '1505162371499298877', description: 'ADMIN' },
+        { label: 'TRISHA', userId: '679270913719533569', categoryId: '1505162218583625818', description: 'FACTION MODERATOR' },
+        { label: 'VINCENT', userId: '1071819331517829242', categoryId: '1505162218583625818', description: 'ADMIN' },
+        { label: 'XINDO', userId: '634627698584715290', categoryId: '1505162218583625818', description: 'GANG MODERATOR' },
+        { label: 'LUPIN', userId: '735045975378362401', categoryId: '1505162218583625818', description: 'DISCORD MODERATOR' }
     ]
 };
