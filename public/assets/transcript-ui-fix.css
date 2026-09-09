@@ -1,0 +1,168 @@
+/* Transcript Viewer layout polish.
+   Loaded after the legacy inline styles. This file only affects Transcripts. */
+
+#view-transcripts.transcript-view-section {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+}
+
+#view-transcripts.transcript-view-section.active {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+#view-transcripts .transcript-page-header {
+    flex: 0 0 auto;
+    width: 100%;
+    margin-bottom: 14px !important;
+}
+
+/* Fill the remaining content-area height instead of relying on a viewport
+   subtraction. This keeps the bottom border visible in a windowed browser. */
+#view-transcripts .transcript-workspace {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    overflow: visible !important;
+}
+
+#view-transcripts .transcript-browser,
+#view-transcripts .transcript-viewer,
+#view-transcripts .transcript-meta-panel {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+}
+
+#view-transcripts .transcript-browser,
+#view-transcripts .transcript-viewer {
+    width: 100% !important;
+}
+
+#view-transcripts .transcript-viewer {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+#view-transcripts .transcript-content {
+    position: relative;
+    flex: 1 1 auto !important;
+    width: 100%;
+    min-width: 0;
+    min-height: 0 !important;
+    overflow: auto !important;
+    overscroll-behavior: contain;
+}
+
+#view-transcripts #transcript-content:has(> .transcript-empty-state) {
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    overflow: hidden !important;
+    background:
+        radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 44%),
+        var(--bg-main) !important;
+}
+
+#view-transcripts #transcript-content > .transcript-empty-state {
+    width: min(100%, 430px);
+    min-height: 0 !important;
+    padding: 34px 30px !important;
+    border: 1px dashed var(--border-light);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+}
+
+#view-transcripts #transcript-content > .transcript-empty-state svg {
+    width: 34px !important;
+    height: 34px !important;
+    padding: 7px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 9%, var(--bg-card));
+}
+
+#view-transcripts #transcript-content > .transcript-empty-state strong {
+    margin-top: 3px;
+    font-size: 13px;
+}
+
+#view-transcripts #transcript-content > .transcript-empty-state p {
+    max-width: 320px;
+    margin: 0;
+    line-height: 1.6;
+}
+
+#view-transcripts .transcript-list-empty {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+}
+
+/* Saved transcript HTML always follows the size of the middle grid column. */
+#view-transcripts .transcript-content iframe {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    border: 0;
+}
+
+#view-transcripts .transcript-meta-panel {
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+}
+
+@media (max-width: 900px) {
+    #view-transcripts.transcript-view-section.active {
+        height: auto !important;
+        min-height: 100% !important;
+        overflow: visible !important;
+    }
+
+    #view-transcripts .transcript-workspace {
+        flex: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        grid-template-columns: 1fr !important;
+    }
+
+    #view-transcripts .transcript-browser {
+        height: 300px !important;
+    }
+
+    #view-transcripts .transcript-viewer {
+        height: 560px !important;
+        min-height: 560px !important;
+    }
+
+    #view-transcripts #transcript-content:has(> .transcript-empty-state) {
+        padding: 18px;
+    }
+
+    #view-transcripts #transcript-content > .transcript-empty-state {
+        padding: 26px 20px !important;
+    }
+}
+
+@media (max-width: 560px) {
+    #view-transcripts .transcript-viewer {
+        height: 480px !important;
+        min-height: 480px !important;
+    }
+}

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5th Avenue Web Panel</title>
+  <style>
+    :root {
+      --text: #f8fbff;
+      --muted: #c7d4e8;
+      --border: rgba(255, 255, 255, 0.18);
+      --panel: rgba(5, 13, 27, 0.72);
+      --primary: #1677ff;
+      --primary-hover: #3b91ff;
+      --danger: rgba(119, 25, 45, 0.78);
+      --danger-border: rgba(255, 105, 135, 0.42);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      color: var(--text);
+      background: #061226;
+      overflow: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      padding: 24px;
+    }
+
+    .page::before,
+    .page::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      filter: blur(70px);
+      opacity: 0.22;
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    .page::before {
+      top: -170px;
+      left: -130px;
+      background: rgba(22, 119, 255, 0.82);
+      animation: ambient-drift-one 11s ease-in-out infinite alternate;
+    }
+
+    .page::after {
+      right: -150px;
+      bottom: -190px;
+      background: rgba(98, 197, 255, 0.62);
+      animation: ambient-drift-two 13s ease-in-out infinite alternate;
+    }
+
+    .login-background {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      filter: brightness(0.72) saturate(0.96);
+      user-select: none;
+      pointer-events: none;
+      animation: background-breathe 12s ease-in-out infinite alternate;
+    }
+
+    .background-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(2, 8, 20, 0.18), rgba(2, 8, 20, 0.34)),
+        linear-gradient(180deg, rgba(2, 8, 20, 0.08), rgba(2, 8, 20, 0.28));
+      pointer-events: none;
+    }
+
+    .login-panel {
+      position: relative;
+      z-index: 2;
+      width: min(430px, 100%);
+      padding: 30px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      animation:
+        panel-enter 0.72s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+        panel-glow 6s ease-in-out 0.72s infinite;
+    }
+
+    .login-panel::before {
+      content: "";
+      position: absolute;
+      top: -90%;
+      left: -55%;
+      width: 36%;
+      height: 280%;
+      opacity: 0;
+      transform: rotate(24deg);
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.09),
+        transparent
+      );
+      pointer-events: none;
+      animation: panel-sheen 7s ease-in-out 1.4s infinite;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 22px;
+    }
+
+    .brand img {
+      width: 54px;
+      height: 54px;
+      flex: 0 0 auto;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 15px rgba(22, 119, 255, 0.24));
+      animation: logo-float 4s ease-in-out infinite;
+    }
+
+    .brand small {
+      display: block;
+      margin-bottom: 4px;
+      color: #62c5ff;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .description {
+      margin-bottom: 20px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .notice {
+      display: none;
+      margin-bottom: 16px;
+      padding: 13px 14px;
+      border: 1px solid var(--danger-border);
+      border-radius: 10px;
+      color: #fff;
+      background: var(--danger);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .notice.show {
+      display: block;
+      animation: notice-enter 0.3s ease-out both;
+    }
+
+    .discord-login {
+      position: relative;
+      width: 100%;
+      min-height: 50px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 18px;
+      overflow: hidden;
+      border: 0;
+      border-radius: 10px;
+      color: #fff;
+      background: var(--primary);
+      box-shadow: 0 12px 28px rgba(22, 119, 255, 0.28);
+      font-size: 14px;
+      font-weight: 750;
+      text-decoration: none;
+      transition:
+        background 0.16s ease,
+        transform 0.16s ease,
+        box-shadow 0.16s ease;
+    }
+
+    .discord-login::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translateX(-120%);
+      background: linear-gradient(
+        105deg,
+        transparent 25%,
+        rgba(255, 255, 255, 0.20) 50%,
+        transparent 75%
+      );
+      animation: button-sheen 5.2s ease-in-out 1.8s infinite;
+      pointer-events: none;
+    }
+
+    .discord-login:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 16px 34px rgba(22, 119, 255, 0.36);
+      transform: translateY(-2px);
+    }
+
+    .discord-login:active {
+      transform: translateY(0) scale(0.99);
+    }
+
+    .discord-login svg {
+      width: 21px;
+      height: 21px;
+      fill: currentColor;
+      transition: transform 0.2s ease;
+    }
+
+    .discord-login:hover svg {
+      transform: rotate(-4deg) scale(1.06);
+    }
+
+    .access-note {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .maintained {
+      margin-top: 10px;
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .maintained-name {
+      display: inline-grid;
+      min-width: 25px;
+      margin-left: 2px;
+      color: #fff;
+      font-weight: 700;
+      text-align: left;
+      vertical-align: baseline;
+    }
+
+    .maintained-name span {
+      grid-area: 1 / 1;
+      will-change: opacity;
+    }
+
+    .maintained-name-yuu {
+      animation: name-yuu 4s ease-in-out infinite;
+    }
+
+    .maintained-name-rora {
+      opacity: 0;
+      animation: name-rora 4s ease-in-out infinite;
+    }
+
+    .ost-player {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 5;
+      width: min(318px, calc(100vw - 36px));
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr) 30px;
+      grid-template-areas:
+        "toggle copy mute"
+        "toggle progress mute";
+      align-items: center;
+      gap: 6px 10px;
+      padding: 10px 11px;
+      border: 1px solid rgba(255, 255, 255, 0.17);
+      border-radius: 13px;
+      color: #fff;
+      background: rgba(4, 11, 23, 0.82);
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(13px) saturate(118%);
+      -webkit-backdrop-filter: blur(13px) saturate(118%);
+      animation: ost-enter 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s both;
+    }
+
+    .ost-player::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      background: linear-gradient(120deg, rgba(22, 119, 255, 0.12), transparent 42%, rgba(98, 197, 255, 0.07));
+      pointer-events: none;
+    }
+
+    .ost-toggle,
+    .ost-mute {
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.07);
+      cursor: pointer;
+      transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+    }
+
+    .ost-toggle:hover,
+    .ost-mute:hover {
+      border-color: rgba(98, 197, 255, 0.45);
+      background: rgba(22, 119, 255, 0.20);
+      transform: translateY(-1px);
+    }
+
+    .ost-toggle:active,
+    .ost-mute:active {
+      transform: translateY(0) scale(0.96);
+    }
+
+    .ost-toggle {
+      grid-area: toggle;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(22, 119, 255, 0.24);
+    }
+
+    .ost-toggle svg,
+    .ost-mute svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+    }
+
+    .ost-copy {
+      grid-area: copy;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ost-equalizer {
+      width: 14px;
+      height: 15px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 2px;
+      flex: 0 0 auto;
+    }
+
+    .ost-equalizer span {
+      width: 2px;
+      height: 4px;
+      border-radius: 999px;
+      background: #62c5ff;
+      transform-origin: bottom;
+    }
+
+    .ost-player[data-state="playing"] .ost-equalizer span:nth-child(1) {
+      animation: eq-one 0.78s ease-in-out infinite alternate;
+    }
+
+    .ost-player[data-state="playing"] .ost-equalizer span:nth-child(2) {
+      animation: eq-two 0.62s ease-in-out infinite alternate;
+    }
+
+    .ost-player[data-state="playing"] .ost-equalizer span:nth-child(3) {
+      animation: eq-three 0.88s ease-in-out infinite alternate;
+    }
+
+    .ost-text {
+      min-width: 0;
+    }
+
+    .ost-watermark {
+      display: block;
+      overflow: hidden;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 10px;
+      font-weight: 750;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ost-status {
+      display: block;
+      margin-top: 2px;
+      overflow: hidden;
+      color: rgba(199, 212, 232, 0.74);
+      font-size: 8px;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ost-progress {
+      grid-area: progress;
+      width: 100%;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .ost-progress-track {
+      position: relative;
+      width: 100%;
+      height: 3px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .ost-progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #1677ff, #62c5ff);
+      transition: width 0.12s linear;
+    }
+
+    .ost-mute {
+      grid-area: mute;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+    }
+
+    .ost-player[data-state="error"] {
+      border-color: rgba(255, 105, 135, 0.42);
+    }
+
+    .ost-player[data-state="error"] .ost-toggle,
+    .ost-player[data-state="error"] .ost-mute {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    @keyframes panel-enter {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.975);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes panel-glow {
+      0%, 100% {
+        border-color: rgba(255, 255, 255, 0.18);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+      }
+      50% {
+        border-color: rgba(98, 197, 255, 0.28);
+        box-shadow:
+          0 24px 70px rgba(0, 0, 0, 0.42),
+          0 0 34px rgba(22, 119, 255, 0.10);
+      }
+    }
+
+    @keyframes panel-sheen {
+      0%, 72%, 100% {
+        left: -55%;
+        opacity: 0;
+      }
+      78% {
+        opacity: 1;
+      }
+      90% {
+        left: 130%;
+        opacity: 0;
+      }
+    }
+
+    @keyframes logo-float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes background-breathe {
+      from {
+        transform: scale(1.01);
+      }
+      to {
+        transform: scale(1.035);
+      }
+    }
+
+    @keyframes ambient-drift-one {
+      from {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      to {
+        transform: translate3d(90px, 65px, 0) scale(1.16);
+      }
+    }
+
+    @keyframes ambient-drift-two {
+      from {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      to {
+        transform: translate3d(-80px, -55px, 0) scale(1.12);
+      }
+    }
+
+    @keyframes button-sheen {
+      0%, 68%, 100% {
+        transform: translateX(-120%);
+      }
+      82% {
+        transform: translateX(120%);
+      }
+    }
+
+    @keyframes notice-enter {
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes ost-enter {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes eq-one {
+      from { height: 4px; }
+      to { height: 13px; }
+    }
+
+    @keyframes eq-two {
+      from { height: 9px; }
+      to { height: 4px; }
+    }
+
+    @keyframes eq-three {
+      from { height: 5px; }
+      to { height: 15px; }
+    }
+
+    @keyframes name-yuu {
+      0%, 42% { opacity: 1; }
+      50%, 92% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes name-rora {
+      0%, 42% { opacity: 0; }
+      50%, 92% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .page::before,
+      .page::after,
+      .login-background,
+      .login-panel,
+      .login-panel::before,
+      .brand img,
+      .discord-login::after,
+      .notice.show,
+      .ost-player,
+      .ost-equalizer span {
+        animation: none !important;
+      }
+
+      .maintained-name span {
+        animation: none;
+      }
+
+      .maintained-name-yuu {
+        display: none;
+      }
+
+      .maintained-name-rora {
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        padding: 16px 16px 96px;
+      }
+
+      .page::before,
+      .page::after {
+        width: 240px;
+        height: 240px;
+      }
+
+      .login-background {
+        object-position: 54% center;
+      }
+
+      .login-panel {
+        padding: 23px 18px;
+        border-radius: 14px;
+      }
+
+      .ost-player {
+        right: 12px;
+        bottom: 12px;
+        left: 12px;
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <img
+      class="login-background"
+      src="/assets/fave.gif?v=20260806-university"
+      alt=""
+      aria-hidden="true"
+      decoding="async"
+      fetchpriority="high"
+    >
+    <div class="background-overlay"></div>
+
+    <section class="login-panel" aria-labelledby="loginTitle">
+      <div class="brand">
+        <img src="/assets/logo.png" alt="5th Avenue Roleplay logo">
+        <div>
+          <small>Ticket Support</small>
+          <h1 id="loginTitle">5th Avenue Web Panel</h1>
+        </div>
+      </div>
+
+      <p class="description">
+        Sign in using your registered Discord admin account to access the panel.
+      </p>
+
+      <div id="noticeBox" class="notice" role="alert"></div>
+
+      <a id="discordLoginButton" class="discord-login" href="/auth/discord">
+        <svg viewBox="0 0 127.14 96.36" aria-hidden="true">
+          <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.58,85.2a68.42,68.42,0,0,1-10.8-5.18c.91-.66,1.8-1.34,2.66-2A75.57,75.57,0,0,0,95.7,78c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.82,5.19,77,77,0,0,0,6.89,11.13A105.25,105.25,0,0,0,126.6,80.22C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C35.94,65.69,30.6,59.76,30.6,52.41S35.83,39.13,42.45,39.13s12,6,11.85,13.28S49,65.69,42.45,65.69Zm42.24,0c-6.51,0-11.85-5.93-11.85-13.28S78.07,39.13,84.69,39.13s12,6,11.85,13.28S91.23,65.69,84.69,65.69Z"/>
+        </svg>
+        <span>Continue with Discord</span>
+      </a>
+
+      <div class="access-note">5th Avenue × University registered staff only.</div>
+      <div class="maintained" aria-label="Maintained by Yuu and Rora">
+        Maintained by
+        <span class="maintained-name" aria-hidden="true">
+          <span class="maintained-name-yuu">Yuu</span>
+          <span class="maintained-name-rora">Rora</span>
+        </span>
+      </div>
+    </section>
+  </main>
+
+  <aside id="ostPlayer" class="ost-player" data-state="loading" aria-label="5th Avenue soundtrack player">
+    <audio
+      id="loginOst"
+      src="/assets/5th-avenue.mp3?v=20260806-ost"
+      preload="metadata"
+      autoplay
+      loop
+    ></audio>
+
+    <button id="ostToggle" class="ost-toggle" type="button" aria-label="Play soundtrack" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+
+    <div class="ost-copy">
+      <span class="ost-equalizer" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span class="ost-text">
+        <strong class="ost-watermark">5th Avenue OST by Joji</strong>
+        <span id="ostStatus" class="ost-status">Loading soundtrack...</span>
+      </span>
+    </div>
+
+    <div id="ostProgress" class="ost-progress" role="slider" tabindex="0" aria-label="Soundtrack progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="ost-progress-track"><div id="ostProgressFill" class="ost-progress-fill"></div></div>
+    </div>
+
+    <button id="ostMute" class="ost-mute" type="button" aria-label="Mute soundtrack" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zm-2.5-8.77v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
+    </button>
+  </aside>
+
+  <script>
+    const noticeBox = document.getElementById('noticeBox');
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const customMessage = params.get('message');
+    const expired = params.get('expired');
+
+    const messages = {
+      access_denied: 'Discord authorization was cancelled.',
+      cancelled: 'Discord authorization was cancelled.',
+      denied: 'YOU ARE NOT A REGISTERED ADMIN.',
+      not_authorized: 'YOU ARE NOT A REGISTERED ADMIN.',
+      not_member: 'YOU ARE NOT A REGISTERED ADMIN.',
+      auth_required: 'Please sign in using your registered Discord admin account.',
+      session_expired: 'Your session expired. Please sign in again.',
+      token_exchange_failed: 'Discord login could not be completed. Please try again.',
+      oauth_expired: 'That Discord login link was already used or expired. Please start a new login.',
+      invalid_state: 'The login session expired. Please start the Discord login again.',
+      oauth_configuration: 'Discord OAuth is not configured correctly on the Web Panel.',
+      discord_error: 'Discord could not complete the login request. Please try again.',
+      server: 'A server error occurred during login. Please try again.',
+      login_failed: 'A server error occurred during login. Please try again.'
+    };
+
+    const noticeText = customMessage || messages[error] || (expired === '1'
+      ? 'Your session expired. Please sign in again.'
+      : '');
+
+    if (noticeText) {
+      noticeBox.textContent = noticeText;
+      noticeBox.classList.add('show');
+    }
+
+    const loginButton = document.getElementById('discordLoginButton');
+    loginButton?.addEventListener('click', () => {
+      loginButton.style.pointerEvents = 'none';
+      loginButton.style.opacity = '0.72';
+      const label = loginButton.querySelector('span');
+      if (label) label.textContent = 'Connecting to Discord...';
+    }, { once: true });
+
+    const ostPlayer = document.getElementById('ostPlayer');
+    const ostAudio = document.getElementById('loginOst');
+    const ostToggle = document.getElementById('ostToggle');
+    const ostMute = document.getElementById('ostMute');
+    const ostStatus = document.getElementById('ostStatus');
+    const ostProgress = document.getElementById('ostProgress');
+    const ostProgressFill = document.getElementById('ostProgressFill');
+
+    const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+    const pauseIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+    const volumeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zm-2.5-8.77v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>';
+    const muteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm13.59 3 2.7 2.7 1.41-1.41L18 10.59l2.7-2.7-1.41-1.41-2.7 2.7-2.7-2.7-1.41 1.41 2.7 2.7-2.7 2.7 1.41 1.41 2.7-2.7z"/></svg>';
+
+    function formatTime(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+      const minutes = Math.floor(seconds / 60);
+      const remainder = Math.floor(seconds % 60).toString().padStart(2, '0');
+      return `${minutes}:${remainder}`;
+    }
+
+    function updateOstState() {
+      const playing = !ostAudio.paused && !ostAudio.ended;
+      ostPlayer.dataset.state = playing ? 'playing' : 'paused';
+      ostToggle.innerHTML = playing ? pauseIcon : playIcon;
+      ostToggle.setAttribute('aria-label', playing ? 'Pause soundtrack' : 'Play soundtrack');
+      ostToggle.setAttribute('aria-pressed', String(playing));
+      ostStatus.textContent = playing
+        ? `${formatTime(ostAudio.currentTime)} / ${formatTime(ostAudio.duration)}`
+        : 'Paused';
+    }
+
+    async function playOst() {
+      try {
+        await ostAudio.play();
+        updateOstState();
+      } catch (_) {
+        ostPlayer.dataset.state = 'paused';
+        ostStatus.textContent = 'Press play to listen';
+        ostToggle.innerHTML = playIcon;
+        ostToggle.setAttribute('aria-label', 'Play soundtrack');
+        ostToggle.setAttribute('aria-pressed', 'false');
+      }
+    }
+
+    function updateOstProgress() {
+      const duration = Number(ostAudio.duration) || 0;
+      const progress = duration ? Math.min(100, (ostAudio.currentTime / duration) * 100) : 0;
+      ostProgressFill.style.width = `${progress}%`;
+      ostProgress.setAttribute('aria-valuenow', String(Math.round(progress)));
+      if (!ostAudio.paused) {
+        ostStatus.textContent = `${formatTime(ostAudio.currentTime)} / ${formatTime(duration)}`;
+      }
+    }
+
+    function seekOst(clientX) {
+      const bounds = ostProgress.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
+      if (Number.isFinite(ostAudio.duration)) {
+        ostAudio.currentTime = ratio * ostAudio.duration;
+        updateOstProgress();
+      }
+    }
+
+    ostAudio.volume = 0.28;
+
+    ostToggle.addEventListener('click', () => {
+      if (ostAudio.paused) playOst();
+      else ostAudio.pause();
+    });
+
+    ostMute.addEventListener('click', () => {
+      ostAudio.muted = !ostAudio.muted;
+      ostMute.innerHTML = ostAudio.muted ? muteIcon : volumeIcon;
+      ostMute.setAttribute('aria-label', ostAudio.muted ? 'Unmute soundtrack' : 'Mute soundtrack');
+      ostMute.setAttribute('aria-pressed', String(ostAudio.muted));
+    });
+
+    ostProgress.addEventListener('click', (event) => seekOst(event.clientX));
+    ostProgress.addEventListener('keydown', (event) => {
+      if (!Number.isFinite(ostAudio.duration)) return;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        ostAudio.currentTime = Math.max(0, Math.min(ostAudio.duration, ostAudio.currentTime + (direction * 5)));
+        updateOstProgress();
+      }
+    });
+
+    ostAudio.addEventListener('loadedmetadata', () => {
+      ostStatus.textContent = `0:00 / ${formatTime(ostAudio.duration)}`;
+      updateOstProgress();
+    });
+    ostAudio.addEventListener('timeupdate', updateOstProgress);
+    ostAudio.addEventListener('play', updateOstState);
+    ostAudio.addEventListener('pause', updateOstState);
+    ostAudio.addEventListener('ended', updateOstState);
+    ostAudio.addEventListener('error', () => {
+      ostPlayer.dataset.state = 'error';
+      ostStatus.textContent = 'Soundtrack unavailable';
+    });
+
+    playOst();
+  </script>
+</body>
+</html>

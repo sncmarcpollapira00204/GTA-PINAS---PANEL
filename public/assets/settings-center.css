@@ -1,0 +1,26 @@
+/* Center the simplified management workspaces without affecting other pages. */
+#view-settings .simple-page,
+#view-import .simple-page,
+#view-access-logs .simple-page {
+    width: min(1050px, 100%) !important;
+    max-width: 1050px !important;
+    margin-inline: auto !important;
+}
+
+#view-settings .simple-page > .page-header,
+#view-settings .simple-settings-grid,
+#view-import .simple-page > .page-header,
+#view-import .simple-page > *,
+#view-access-logs .simple-page > .page-header,
+#view-access-logs .simple-page > * {
+    width: 100% !important;
+}
+
+@media (max-width: 760px) {
+    #view-settings .simple-page,
+    #view-import .simple-page,
+    #view-access-logs .simple-page {
+        width: 100% !important;
+        margin-inline: 0 !important;
+    }
+}
