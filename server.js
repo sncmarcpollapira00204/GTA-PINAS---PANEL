@@ -29,7 +29,7 @@ const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
 const RESTORE_BODY_LIMIT = process.env.RESTORE_BODY_LIMIT || '150mb';
-const PANEL_ASSET_VERSION = process.env.PANEL_ASSET_VERSION || '20260816-ost-fix';
+const PANEL_ASSET_VERSION = process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas';
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 
 let httpServer = null;
@@ -147,10 +147,7 @@ app.use('/assets', express.static(path.join(PUBLIC_DIR, 'assets'), {
   },
 }));
 
-// Login and dashboard media must be readable before a Discord session exists.
 app.use('/media', mediaRoutes);
-
-// Authentication is resolved before any potentially large request body is parsed.
 app.use(loadAuthentication);
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -163,8 +160,6 @@ app.get('/login', redirectAuthenticated, (req, res, next) => {
 
 app.use('/auth', authRoutes.pageRouter);
 
-// The owner-only restore endpoint receives its larger parser only after auth,
-// CSRF, and owner checks have passed.
 app.post(
   '/api/import/restore',
   requireApiAuth,
@@ -182,7 +177,7 @@ app.use('/api/auth', authRoutes.apiRouter);
 app.get('/api/health/live', (req, res) => {
   return res.json({
     status: 'ok',
-    service: '5th-avenue-web-panel',
+    service: 'gta-pinas-web-panel',
     uptimeSeconds: Math.floor(process.uptime()),
   });
 });
@@ -196,7 +191,7 @@ async function readinessResponse(req, res) {
       database: 'connected',
       authentication: 'enabled',
       pool: typeof pool.getMetrics === 'function' ? pool.getMetrics() : undefined,
-      message: 'Web Panel, PostgreSQL, Discord Login, and dynamic media are ready.',
+      message: 'GTA Pinas Web Panel, PostgreSQL, Discord Login, and dynamic media are ready.',
     });
   } catch (error) {
     console.error(`[HEALTH ${req.requestId}]`, error.message);
@@ -210,7 +205,6 @@ async function readinessResponse(req, res) {
 }
 
 app.get(['/api/health', '/api/health/ready'], readinessResponse);
-
 app.use('/api', requireApiAuth, requireCsrf, apiRoutes);
 
 app.get(['/', '/index.html'], requirePageAuth, (req, res, next) => {
@@ -228,105 +222,58 @@ app.use((req, res) => {
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
-
   const bodyParserError = error?.type === 'entity.too.large' || error instanceof SyntaxError;
   const requestedStatus = Number(error?.statusCode || error?.status);
   const status = error?.type === 'entity.too.large' ? 413
     : error instanceof SyntaxError ? 400
       : Number.isInteger(requestedStatus) && requestedStatus >= 400 && requestedStatus < 600
-        ? requestedStatus
-        : 500;
-
-  if (status >= 500) {
-    console.error(`[REQUEST ERROR ${req.requestId}]`, error);
-  } else if (status !== 404) {
-    console.warn(`[REQUEST ${status} ${req.requestId}]`, error?.message || error);
-  }
-
+        ? requestedStatus : 500;
+  if (status >= 500) console.error(`[REQUEST ERROR ${req.requestId}]`, error);
+  else if (status !== 404) console.warn(`[REQUEST ${status} ${req.requestId}]`, error?.message || error);
   const message = bodyParserError
     ? (status === 413 ? 'Request body is too large.' : 'Request body contains invalid JSON.')
-    : status === 404
-      ? 'Resource not found.'
-      : status < 500
-        ? 'Request could not be completed.'
-        : 'Internal server error.';
-
-  return res.status(status).json({
-    error: message,
-    requestId: req.requestId,
-  });
+    : status === 404 ? 'Resource not found.'
+      : status < 500 ? 'Request could not be completed.' : 'Internal server error.';
+  return res.status(status).json({ error: message, requestId: req.requestId });
 });
 
 async function startServer() {
-  authService.validateConfiguration();
-  await pool.initSchema();
-  await mediaSettingsService.initializeStorage();
-  await authService.initAuthTables();
-  await importJobService.initJobStore();
-  await loadPageTemplates();
-
-  cleanupTimer = setInterval(() => {
-    authService.cleanupExpiredSessions().catch((error) => {
-      console.warn('[AUTH] Session cleanup failed:', error.message);
-    });
-  }, 15 * 60 * 1000);
-  cleanupTimer.unref();
-
-  httpServer = app.listen(PORT, '0.0.0.0', () => {
-    ready = true;
-    console.log(`[WEB PANEL] Server is running on port ${PORT}.`);
-    console.log('[AUTH] Discord OAuth2 login and role protection are enabled.');
-    console.log('[SECURITY] All panel APIs, backups, restores, and transcripts require authentication.');
-    console.log('[MEDIA] Dashboard banner, login banner, and web music can be managed from Settings.');
-    console.log('[LIVE SYNC] Main Discord Bot writes directly to Postgres-Tickets.');
-    console.log('[RECOVERY] Discord imports remain manual in Import Center.');
-  });
-
-  httpServer.keepAliveTimeout = 65_000;
-  httpServer.headersTimeout = 70_000;
-  httpServer.requestTimeout = 120_000;
-
-  // Warm external Discord profile data after the server is already accepting
-  // requests. Startup and first-page rendering never wait for this operation.
-  setImmediate(() => staffProfileService.warmStaffProfiles());
-}
-
-async function shutdown(signal, exitCode = 0) {
   if (shuttingDown) return;
-  shuttingDown = true;
-  ready = false;
-  console.log(`[WEB PANEL] Received ${signal}. Closing services...`);
-
-  if (cleanupTimer) clearInterval(cleanupTimer);
-
-  const forceExit = setTimeout(() => process.exit(exitCode || 1), 15_000);
-  forceExit.unref();
-
   try {
-    if (httpServer) {
-      await new Promise((resolve) => httpServer.close(resolve));
-    }
-    await pool.end().catch((error) => {
-      console.error('[WEB PANEL] Database pool shutdown failed:', error.message);
+    await pool.initSchema();
+    await authService.init();
+    await staffProfileService.ensureSchema();
+    await mediaSettingsService.ensureSchema();
+    await loadPageTemplates();
+    ready = true;
+    httpServer = app.listen(PORT, () => {
+      console.log(`[WEB PANEL] GTA Pinas panel listening on port ${PORT}.`);
     });
-  } finally {
-    clearTimeout(forceExit);
-    process.exit(exitCode);
+    cleanupTimer = setInterval(() => {
+      authService.cleanupExpiredSessions().catch(() => {});
+      importJobService.cleanupExpiredJobs().catch(() => {});
+    }, 15 * 60 * 1000);
+    if (typeof cleanupTimer.unref === 'function') cleanupTimer.unref();
+  } catch (error) {
+    console.error('[WEB PANEL STARTUP FAILED]', error);
+    process.exitCode = 1;
   }
 }
 
-startServer().catch((error) => {
-  console.error('[STARTUP ERROR]', error);
-  void shutdown('startup failure', 1);
-});
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  if (cleanupTimer) clearInterval(cleanupTimer);
+  if (httpServer) {
+    await new Promise((resolve) => httpServer.close(resolve));
+  }
+  await pool.end().catch(() => {});
+  console.log(`[WEB PANEL] Shutdown complete (${signal}).`);
+}
 
-process.on('SIGINT', () => void shutdown('SIGINT'));
-process.on('SIGTERM', () => void shutdown('SIGTERM'));
-process.on('unhandledRejection', (error) => {
-  console.error('[UNHANDLED REJECTION]', error);
-  void shutdown('unhandled rejection', 1);
-});
-process.on('uncaughtException', (error) => {
-  console.error('[UNCAUGHT EXCEPTION]', error);
-  void shutdown('uncaught exception', 1);
-});
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+if (require.main === module) startServer();
+
+module.exports = { app, startServer, shutdown };
