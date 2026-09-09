@@ -61,11 +61,8 @@ async function loadPageTemplates() {
   ];
   const scriptTags = [
     `<script defer src="/assets/admin-name-rotator.js?v=${PANEL_ASSET_VERSION}"></script>`,
-    '<script defer src="/assets/ticket-ui-cleanup.js?v=20260806-2"></script>',
+    '<script defer src="/assets/ticket-ui-cleanup.js?v=20260910-1"></script>',
     '<script defer src="/assets/simple-panel-ui.js?v=20260806-1"></script>',
-    `<script defer src="/assets/whitelist-check-upgrade.js?v=${PANEL_ASSET_VERSION}"></script>`,
-    '<script defer src="/assets/import-transcript-fix.js?v=20260806-1"></script>',
-    `<script defer src="/assets/import-database-clear.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/transcript-collapse-fix.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/transcript-meta-footer.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/open-ticket-discord.js?v=${PANEL_ASSET_VERSION}"></script>`,
