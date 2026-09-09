@@ -9,6 +9,24 @@
     const style = document.createElement('style');
     style.id = 'ticket-ui-cleanup-styles';
     style.textContent = `
+      /* GTA Pinas does not use the legacy whitelist/import/backup modules. */
+      #nav-whitelist-menu,
+      #view-whitelist-check,
+      #view-whitelist-pending,
+      #view-whitelist-approved,
+      #view-import,
+      #view-backup {
+        display: none !important;
+      }
+
+      [data-view="whitelist-check"],
+      [data-view="whitelist-pending"],
+      [data-view="whitelist-approved"],
+      [data-view="import"],
+      [data-view="backup"] {
+        display: none !important;
+      }
+
       #view-open-tickets .table-container,
       #view-closed-tickets .table-container {
         border-radius: 10px;
