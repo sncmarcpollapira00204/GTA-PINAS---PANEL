@@ -22,7 +22,8 @@ const {
 const { requireCsrf } = require('./middleware/csrf.middleware');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
+const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
 const PANEL_ASSET_VERSION = process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas';
@@ -229,8 +230,8 @@ async function startServer() {
     await loadPageTemplates();
     await mediaSettingsService.initializeStorage();
     ready = true;
-    httpServer = app.listen(PORT, () => {
-      console.log(`[WEB PANEL] GTA Pinas panel listening on port ${PORT}.`);
+    httpServer = app.listen(PORT, HOST, () => {
+      console.log(`[WEB PANEL] GTA Pinas panel listening on ${HOST}:${PORT}.`);
     });
     cleanupTimer = setInterval(() => {
       authService.cleanupExpiredSessions().catch(() => {});
