@@ -1,6 +1,7 @@
 {
-  "name": "5th-avenue-web-panel",
+  "name": "gta-pinas-web-panel",
   "version": "1.0.0",
+  "private": true,
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
