@@ -1,5 +1,4 @@
 const pool = require('../db');
-const backupService = require('../services/backup.service');
 const config = require('../config.json');
 const staffConfig = require('../ticket-staff.js');
 
@@ -151,7 +150,6 @@ exports.getTickets = async (req, res) => {
     return sendInternalError(req, res);
   }
 };
-
 
 exports.getTicketById = async (req, res) => {
   try {
@@ -355,46 +353,5 @@ exports.getStaff = async (req, res) => {
   } catch (error) {
     console.error('[API STAFF ERROR]', error);
     return sendInternalError(req, res);
-  }
-};
-
-exports.exportBackupJSON = async (req, res) => {
-  try {
-    const data = await backupService.generateJSONBackup();
-
-    await pool.query(
-      `INSERT INTO ticket_logs (action, description)
-       VALUES ($1, $2)`,
-      ['BACKUP_JSON', 'Exported a full JSON database backup']
-    );
-
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename="5th-avenue-backup.json"'
-    );
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-
-    return res.send(JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('[JSON BACKUP ERROR]', error);
-    return sendInternalError(req, res);
-  }
-};
-
-exports.exportBackupZIP = async (req, res) => {
-  try {
-    await pool.query(
-      `INSERT INTO ticket_logs (action, description)
-       VALUES ($1, $2)`,
-      ['BACKUP_ZIP', 'Exported a full ZIP database backup']
-    );
-
-    await backupService.generateZIPBackup(res);
-  } catch (error) {
-    console.error('[ZIP BACKUP ERROR]', error);
-
-    if (!res.headersSent) {
-      return sendInternalError(req, res);
-    }
   }
 };
