@@ -11,11 +11,19 @@
     style.textContent = `
       /* GTA Pinas does not use the legacy whitelist/import/backup modules. */
       #nav-whitelist-menu,
+      [data-nav-group="whitelist"],
       #view-whitelist-check,
       #view-whitelist-pending,
       #view-whitelist-approved,
       #view-import,
-      #view-backup {
+      #view-backup,
+      #view-staff,
+      #view-staff-performance,
+      #nav-management-menu [data-target="view-staff"],
+      #nav-management-menu [data-target="view-staff-performance"],
+      #stat-staff,
+      #stat-pending-whitelist,
+      #stat-whitelisted {
         display: none !important;
       }
 
@@ -23,7 +31,15 @@
       [data-view="whitelist-pending"],
       [data-view="whitelist-approved"],
       [data-view="import"],
-      [data-view="backup"] {
+      [data-view="backup"],
+      [data-view="staff"],
+      [data-view="staff-performance"] {
+        display: none !important;
+      }
+
+      #view-dashboard #stat-staff,
+      #view-dashboard #stat-pending-whitelist,
+      #view-dashboard #stat-whitelisted {
         display: none !important;
       }
 
