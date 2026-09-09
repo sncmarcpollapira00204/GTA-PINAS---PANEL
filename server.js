@@ -226,9 +226,8 @@ async function startServer() {
   try {
     await pool.initSchema();
     await authService.initAuthTables();
-    await staffProfileService.ensureSchema();
-    await mediaSettingsService.ensureSchema();
     await loadPageTemplates();
+    await mediaSettingsService.initializeStorage();
     ready = true;
     httpServer = app.listen(PORT, () => {
       console.log(`[WEB PANEL] GTA Pinas panel listening on port ${PORT}.`);
