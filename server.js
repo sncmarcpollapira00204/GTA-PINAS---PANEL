@@ -11,8 +11,6 @@ const apiRoutes = require('./routes/api.routes');
 const authRoutes = require('./routes/auth.routes');
 const mediaRoutes = require('./routes/media.routes');
 const authService = require('./services/auth.service');
-const importController = require('./controllers/import.controller');
-const importJobService = require('./services/importJob.service');
 const staffProfileService = require('./services/staffProfile.service');
 const mediaSettingsService = require('./services/mediaSettings.service');
 const {
@@ -22,13 +20,11 @@ const {
   redirectAuthenticated,
 } = require('./middleware/auth.middleware');
 const { requireCsrf } = require('./middleware/csrf.middleware');
-const { requirePanelOwner } = require('./middleware/owner.middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const RESTORE_BODY_LIMIT = process.env.RESTORE_BODY_LIMIT || '150mb';
 const PANEL_ASSET_VERSION = process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas';
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 
@@ -160,15 +156,6 @@ app.get('/login', redirectAuthenticated, (req, res, next) => {
 
 app.use('/auth', authRoutes.pageRouter);
 
-app.post(
-  '/api/import/restore',
-  requireApiAuth,
-  requireCsrf,
-  requirePanelOwner,
-  express.json({ limit: RESTORE_BODY_LIMIT, strict: true }),
-  importController.startJSONRestore
-);
-
 app.use(express.json({ limit: NORMAL_BODY_LIMIT, strict: true }));
 app.use(express.urlencoded({ extended: true, limit: '256kb', parameterLimit: 1000 }));
 
@@ -251,7 +238,6 @@ async function startServer() {
     });
     cleanupTimer = setInterval(() => {
       authService.cleanupExpiredSessions().catch(() => {});
-      importJobService.cleanupExpiredJobs().catch(() => {});
     }, 15 * 60 * 1000);
     if (typeof cleanupTimer.unref === 'function') cleanupTimer.unref();
   } catch (error) {
