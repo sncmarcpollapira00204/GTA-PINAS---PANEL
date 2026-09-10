@@ -22,15 +22,15 @@ const MEDIA_CONFIG_CACHE_MS = positiveMilliseconds(process.env.MEDIA_CONFIG_CACH
 const SLOT_CONFIG = Object.freeze({
   dashboard_banner: {
     label: 'Dashboard Banner',
-    defaultUrl: '/assets/joji.png?v=20260806-0838',
+    defaultUrl: '/assets/gtapinasbg.gif?v=20260910',
     defaultKind: 'image',
-    defaultMimeType: 'image/png',
+    defaultMimeType: 'image/gif',
     maxBytes: positiveMegabytes(process.env.MEDIA_MAX_DASHBOARD_MB, 20),
     allowedMimeTypes: new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'video/webm']),
   },
   login_banner: {
     label: 'Login / Web Banner',
-    defaultUrl: '/assets/fave.gif?v=20260806-university',
+    defaultUrl: '/assets/gtapinasbg.gif?v=20260910',
     defaultKind: 'image',
     defaultMimeType: 'image/gif',
     maxBytes: positiveMegabytes(process.env.MEDIA_MAX_LOGIN_MB, 40),
@@ -38,7 +38,7 @@ const SLOT_CONFIG = Object.freeze({
   },
   login_music: {
     label: 'Web Music',
-    defaultUrl: '/assets/5th-avenue.mp3?v=20260806-ost',
+    defaultUrl: '/assets/gtapinasmusic.MP3?v=20260910',
     defaultKind: 'audio',
     defaultMimeType: 'audio/mpeg',
     maxBytes: positiveMegabytes(process.env.MEDIA_MAX_AUDIO_MB, 20),
