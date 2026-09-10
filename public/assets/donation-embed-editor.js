@@ -38,14 +38,18 @@
             #view-donation-embed-editor .dee-actions .btn{min-height:34px;width:auto;flex:0 0 150px;padding:7px 14px}
             #view-donation-embed-editor .dee-preview-wrap{position:sticky;top:16px;height:max-content}
             #view-donation-embed-editor .dee-preview-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.dee-preview-label strong{font-size:12px}
-            #view-donation-embed-editor .dee-preview-trigger{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--primary);font:inherit;font-size:10px;font-weight:700;padding:4px 0;cursor:pointer}
+            #view-donation-embed-editor .dee-preview-trigger{border:0;background:transparent;color:var(--primary);font:inherit;font-size:10px;font-weight:700;padding:4px 0;cursor:pointer}
             #view-donation-embed-editor .dee-preview-trigger:hover{opacity:.82}
-            #view-donation-embed-editor .dee-discord{background:#313338;border-radius:6px;padding:18px;min-height:320px}
-            #view-donation-embed-editor .dee-discord-user{display:flex;align-items:center;gap:9px;margin-bottom:14px}.dee-discord-avatar{width:32px;height:32px;border-radius:50%;background:#5865f2;display:grid;place-items:center;font-size:10px;font-weight:800}.dee-discord-user strong{font-size:11px}.dee-discord-user span{display:block;color:#949ba4;font-size:9px;margin-top:2px}
-            #view-donation-embed-editor .dee-embed{position:relative;width:100%;max-width:540px;box-sizing:border-box;background:#2b2d31;border-left:4px solid #5865f2;border-radius:3px;padding:12px 14px;color:#dbdee1;overflow:hidden}
+            #view-donation-embed-editor .dee-discord{background:#313338;border-radius:6px;padding:14px;min-height:320px}
+            #view-donation-embed-editor .dee-discord-user{display:flex;align-items:center;gap:9px;margin-bottom:12px}.dee-discord-avatar{width:32px;height:32px;border-radius:50%;background:#5865f2;display:grid;place-items:center;font-size:10px;font-weight:800}.dee-discord-user strong{font-size:11px}.dee-discord-user span{display:block;color:#949ba4;font-size:9px;margin-top:2px}
+            #view-donation-embed-editor .dee-embed{position:relative;width:100%;max-width:540px;box-sizing:border-box;background:#2b2d31;border-left:4px solid #5865f2;border-radius:3px;padding:10px 12px;color:#dbdee1;overflow:hidden}
             #view-donation-embed-editor .dee-embed-main{padding-right:0}.dee-embed.has-thumbnail .dee-embed-main{padding-right:92px}
-            #view-donation-embed-editor .dee-embed-author{font-size:10px;font-weight:700;margin-bottom:7px}.dee-embed-title{font-size:14px;font-weight:700;margin-bottom:6px}.dee-embed-description{font-size:11px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
-            #view-donation-embed-editor .dee-embed-thumbnail{position:absolute;top:12px;right:14px;width:72px;height:72px;border-radius:4px;object-fit:cover}.dee-embed-image{display:block;width:100%;max-height:260px;border-radius:4px;margin-top:10px;object-fit:contain}
+            #view-donation-embed-editor .dee-embed-author{font-size:10px;font-weight:700;margin-bottom:7px}.dee-embed-title{font-size:16px;font-weight:700;margin-bottom:6px}.dee-embed-description{font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+            #view-donation-embed-editor .dee-embed-description .discord-heading{font-weight:800;color:#f2f3f5;font-size:15px;line-height:1.35;margin:14px 0 7px}
+            #view-donation-embed-editor .dee-embed-description .discord-heading:first-child{margin-top:0}
+            #view-donation-embed-editor .dee-embed-description .discord-list{margin:0 0 8px;padding-left:18px}.dee-embed-description .discord-list li{padding-left:2px;margin:2px 0}
+            #view-donation-embed-editor .dee-embed-description .discord-code{display:inline-block;background:#1e1f22;border-radius:3px;padding:1px 4px;font-family:monospace;font-size:10px}
+            #view-donation-embed-editor .dee-embed-thumbnail{position:absolute;top:10px;right:12px;width:72px;height:72px;border-radius:4px;object-fit:cover}.dee-embed-image{display:block;width:100%;max-height:260px;border-radius:4px;margin-top:10px;object-fit:contain}
             #view-donation-embed-editor .dee-embed-footer{color:#949ba4;font-size:9px;margin-top:10px;padding-top:2px}
             #view-donation-embed-editor .dee-send-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}.dee-send-box label{display:block;font-size:10px;font-weight:700;color:var(--text-main);margin-bottom:6px}.dee-status{margin-top:10px;font-size:10px;color:var(--text-sec);min-height:16px}.dee-status.error{color:var(--danger)}.dee-status.success{color:var(--success)}
             #view-donation-embed-editor #dee-channel{height:36px}
@@ -102,6 +106,54 @@
         };
     }
 
+    function renderDescription(value) {
+        const raw = String(value || '').replace(/\r\n/g, '\n');
+        const lines = raw.split('\n');
+        const output = [];
+        let list = null;
+
+        const flushList = () => {
+            if (!list) return;
+            output.push(`<ul class="discord-list">${list.map(item => `<li>${item}</li>`).join('')}</ul>`);
+            list = null;
+        };
+
+        lines.forEach((line) => {
+            const trimmed = line.trim();
+            if (!trimmed) {
+                flushList();
+                output.push('<div style="height:6px"></div>');
+                return;
+            }
+
+            const heading = trimmed.match(/^#{1,6}\s+(.+)$/);
+            if (heading) {
+                flushList();
+                output.push(`<div class="discord-heading">${formatInline(heading[1])}</div>`);
+                return;
+            }
+
+            const bullet = trimmed.match(/^[-*•]\s+(.+)$/);
+            if (bullet) {
+                if (!list) list = [];
+                list.push(formatInline(bullet[1]));
+                return;
+            }
+
+            flushList();
+            output.push(`<div>${formatInline(trimmed)}</div>`);
+        });
+        flushList();
+        return output.join('');
+    }
+
+    function formatInline(value) {
+        let text = esc(value);
+        text = text.replace(/`([^`]+)`/g, '<span class="discord-code">$1</span>');
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        return text;
+    }
+
     function renderPreview() {
         const data = formData();
         const colorRaw = String(data.color || '').trim().replace(/^#/, '');
@@ -115,7 +167,7 @@
                 <div class="dee-embed-main">
                     ${data.author ? `<div class="dee-embed-author">${esc(data.author)}</div>` : ''}
                     ${data.title ? `<div class="dee-embed-title">${esc(data.title)}</div>` : ''}
-                    ${data.description ? `<div class="dee-embed-description">${esc(data.description)}</div>` : '<div class="dee-embed-description" style="opacity:.5">Start typing to preview your message.</div>'}
+                    ${data.description ? `<div class="dee-embed-description">${renderDescription(data.description)}</div>` : '<div class="dee-embed-description" style="opacity:.5">Start typing to preview your message.</div>'}
                     ${image ? `<img class="dee-embed-image" src="${esc(image)}" alt="" onerror="this.style.display='none'">` : ''}
                     ${data.footer ? `<div class="dee-embed-footer">${esc(data.footer)}</div>` : ''}
                 </div>
