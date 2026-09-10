@@ -25,11 +25,10 @@ module.exports = {
         { label: 'GYDEON', userId: '692015347192299560', categoryId: '1505162371499298877', description: 'Mapping Team' },
         { label: 'QUINTILIAN', userId: '217260561224695808', categoryId: '1505162371499298877', description: 'Admin' },
         { label: 'TRISHA', userId: '679270913719533569', categoryId: '1505162218583625818', description: 'Faction Moderator' },
-        { label: 'VINCENT', userId: '1071819331517829242', categoryId: '1505162218583625818', description: 'Admin' },
         { label: 'XINDO', userId: '634627698584715290', categoryId: '1505162218583625818', description: 'Gang Moderator' },
         { label: 'LUPIN', userId: '735045975378362401', categoryId: '1505162218583625818', description: 'Discord Moderator' },
-        { label: 'CIPHER', userId: '', categoryId: null, description: 'Main Developer' },
-        { label: 'AEZAKMI', userId: '', categoryId: null, description: 'Developer' },
-        { label: 'ZOEY', userId: '', categoryId: null, description: 'Owner' }
+        { label: 'CIPHER', userId: '386557507327361025', categoryId: null, description: 'Main Developer' },
+        { label: 'AEZAKMI', userId: '404293317640323073', categoryId: null, description: 'Developer' },
+        { label: 'ZOEY', userId: '706845659533148171', categoryId: null, description: 'Owner' }
     ]
 };
