@@ -34,7 +34,7 @@ const SLOT_CONFIG = Object.freeze({
     defaultKind: 'image',
     defaultMimeType: 'image/gif',
     maxBytes: positiveMegabytes(process.env.MEDIA_MAX_LOGIN_MB, 40),
-    allowedMimeTypes: new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'video/webm']),
+    allowedMimeTypes: new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'video/webm', 'video/mp4']),
   },
   login_music: {
     label: 'Web Music',
@@ -54,6 +54,7 @@ const MIME_EXTENSION = Object.freeze({
   'image/webp': 'webp',
   'image/gif': 'gif',
   'video/webm': 'webm',
+  'video/mp4': 'mp4',
   'audio/mpeg': 'mp3',
   'audio/ogg': 'ogg',
   'audio/wav': 'wav',
@@ -92,6 +93,8 @@ function detectMimeType(buffer, slot, declaredMimeType = '') {
   if (hasAscii(buffer, 'RIFF') && hasAscii(buffer, 'WAVE', 8)) return 'audio/wav';
   if (hasAscii(buffer, 'OggS')) return 'audio/ogg';
   if (hasAscii(buffer, 'ID3') || (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0)) return 'audio/mpeg';
+
+  if (hasAscii(buffer, 'ftyp', 4)) return 'video/mp4';
 
   if (hasBytes(buffer, [0x1a, 0x45, 0xdf, 0xa3])) {
     return slot === 'login_music' || cleanMimeType(declaredMimeType) === 'audio/webm'
