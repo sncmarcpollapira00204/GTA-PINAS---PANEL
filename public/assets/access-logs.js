@@ -287,4 +287,31 @@
       window.loadAccessLogs({ quiet: true, force: true });
     }
   }, 60_000);
+
+  function removeExtraDashboardStats() {
+    const apply = () => {
+      const dashboard = document.getElementById('view-dashboard');
+      const cards = dashboard?.querySelectorAll('.dashboard-stats-grid .dashboard-stat-card');
+      if (!cards?.length) return;
+
+      cards.forEach((card, index) => {
+        if (index >= 2) card.remove();
+      });
+
+      const grid = dashboard.querySelector('.dashboard-stats-grid');
+      if (grid) grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+    };
+
+    apply();
+    if (document.body) {
+      const observer = new MutationObserver(apply);
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', removeExtraDashboardStats, { once: true });
+  } else {
+    removeExtraDashboardStats();
+  }
 })();
