@@ -3,8 +3,6 @@
 const crypto = require('crypto');
 const pool = require('../db');
 const config = require('../config.json');
-
-const DISCORD_API = 'https://discord.com/api/v10';
 const jobs = new Map();
 
 const SOURCES = {
@@ -31,7 +29,7 @@ function apiHeaders() {
 }
 
 async function discordRequest(pathname, options = {}) {
-  const response = await fetch(`${DISCORD_API}${pathname}`, {
+  const response = await fetch(`https://discord.com/api/v10${pathname}`, {
     ...options,
     headers: { ...apiHeaders(), ...(options.headers || {}) },
   });
@@ -101,6 +99,19 @@ async function fetchGuildMember(discordId) {
   } catch (error) {
     if (error?.status === 404) return null;
     throw error;
+  }
+}
+
+function buildAvatarUrl(user) {
+  if (!user?.id) return null;
+  if (user.avatar) {
+    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${String(user.avatar).startsWith('a_') ? 'gif' : 'png'}?size=128`;
+  }
+  try {
+    const defaultIndex = Number((BigInt(String(user.id)) >> 22n) % 6n);
+    return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`;
+  } catch {
+    return null;
   }
 }
 
@@ -181,7 +192,6 @@ async function storeImportedTranscript({ source, summary, ownerId, ticketOwnerNa
   if (ownerId) await upsertUser(ownerId, ticketOwnerName || 'Unknown User');
   if (closedById) await upsertStaff(closedById, closedByName || 'Unknown Staff');
 
-  // Discord already hosts the transcript file. Keep only lightweight metadata in PostgreSQL.
   await pool.query(
     `DELETE FROM ticket_transcripts WHERE ticket_id=$1;
      INSERT INTO ticket_transcripts
@@ -231,22 +241,28 @@ async function runImport(job, sourceKey) {
     );
     const closedById = parseOwnerId(closedByRaw);
 
-    // The attachment message contains the Discord-hosted transcript HTML.
-    // Only save its URL; never download/copy the HTML into PostgreSQL.
     const attachmentMessage = findAttachmentMessage(messages, messages.indexOf(summary));
     const transcriptUrl = attachmentMessage?.attachments?.[0]?.url || null;
 
     let ticketOwnerName = cleanText(rawOwner);
     let closedByName = cleanText(closedByRaw);
+    let ownerAvatar = null;
+    let closerAvatar = null;
 
     try {
       if (ownerId) {
         const ownerMember = await fetchGuildMember(ownerId);
-        if (ownerMember) ticketOwnerName = ownerMember.nick || ownerMember.user?.global_name || ownerMember.user?.username || ticketOwnerName;
+        if (ownerMember?.user) {
+          ticketOwnerName = ownerMember.nick || ownerMember.user.global_name || ownerMember.user.username || ticketOwnerName;
+          ownerAvatar = buildAvatarUrl(ownerMember.user);
+        }
       }
       if (closedById) {
         const closedByMember = await fetchGuildMember(closedById);
-        if (closedByMember) closedByName = closedByMember.nick || closedByMember.user?.global_name || closedByMember.user?.username || closedByName;
+        if (closedByMember?.user) {
+          closedByName = closedByMember.nick || closedByMember.user.global_name || closedByMember.user.username || closedByName;
+          closerAvatar = buildAvatarUrl(closedByMember.user);
+        }
       }
 
       await storeImportedTranscript({
@@ -260,6 +276,9 @@ async function runImport(job, sourceKey) {
         closedByName,
         transcriptUrl,
       });
+
+      if (ownerId) await upsertUser(ownerId, ticketOwnerName || 'Unknown User', ownerAvatar);
+      if (closedById) await upsertStaff(closedById, closedByName || 'Unknown Staff', closerAvatar);
       imported += 1;
     } catch (error) {
       failed += 1;
