@@ -14,12 +14,9 @@ function extractDiscordTranscriptState(input) {
 
     try {
       const parsed = JSON.parse(assignment[1]);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return parsed;
-      }
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
     } catch (_) {
-      // Ignore malformed or unexpected inline scripts. Only valid JSON state
-      // from discord-html-transcripts is restored.
+      // Ignore malformed or unexpected inline scripts.
     }
   }
 
@@ -51,8 +48,10 @@ function safeNonce(value) {
   return String(value || '').replace(/[^a-zA-Z0-9+/_=-]/g, '');
 }
 
-function buildSafeTranscriptHtml(input, nonce) {
-  const state = extractDiscordTranscriptState(input);
+function buildSafeTranscriptHtml(input, nonce, stateOverride = null) {
+  const state = stateOverride && typeof stateOverride === 'object'
+    ? stateOverride
+    : extractDiscordTranscriptState(input);
   const html = sanitizeTranscriptHtml(input);
   const normalizedNonce = safeNonce(nonce);
   const nonceAttribute = normalizedNonce ? ` nonce="${normalizedNonce}"` : '';
@@ -61,10 +60,7 @@ function buildSafeTranscriptHtml(input, nonce) {
     `<script${nonceAttribute} type="module" src="${TRANSCRIPT_COMPONENT_SRC}"></script>`,
   ].join('');
 
-  if (/<\/head\s*>/i.test(html)) {
-    return html.replace(/<\/head\s*>/i, `${runtime}</head>`);
-  }
-
+  if (/<\/head\s*>/i.test(html)) return html.replace(/<\/head\s*>/i, `${runtime}</head>`);
   return `<!doctype html><html><head><meta charset="utf-8">${runtime}</head><body>${html}</body></html>`;
 }
 
