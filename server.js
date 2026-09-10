@@ -20,7 +20,7 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-previewfix2`;
+const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-discohook1`;
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 let httpServer = null;
 let cleanupTimer = null;
@@ -71,6 +71,7 @@ async function loadPageTemplates() {
     '<script defer src="/assets/manage-staff.js?v=20260816-3"></script>',
     `<script defer src="/assets/donation-embed-editor.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/donation-embed-preview-fix.js?v=${PANEL_ASSET_VERSION}"></script>`,
+    `<script defer src="/assets/donation-embed-discohook-preview.js?v=${PANEL_ASSET_VERSION}"></script>`,
   ];
   pageTemplates = {
     login: injectBeforeClosingTag(loginHtml, '</body>', loginScripts),
