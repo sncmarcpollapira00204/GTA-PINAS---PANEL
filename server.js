@@ -85,6 +85,7 @@ async function loadPageTemplates() {
     `<script defer src="/assets/admin-name-rotator.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/ticket-ui-cleanup.js?v=${PANEL_ASSET_VERSION}"></script>`,
     '<script defer src="/assets/simple-panel-ui.js?v=20260806-1"></script>',
+    `<script defer src="/assets/import-center-source-of-truth.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/transcript-collapse-fix.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/transcript-meta-footer.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/open-ticket-discord.js?v=${PANEL_ASSET_VERSION}"></script>`,
