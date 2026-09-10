@@ -130,18 +130,7 @@ async function upsertStaff(staffId, username, avatar = null) {
   );
 }
 
-async function storeImportedTranscript({ source, summary, attachmentMessage, ownerId, ticketOwnerName, ticketName, panelName, closedById, closedByName }) {
-  const transcriptUrl = attachmentMessage?.attachments?.[0]?.url || null;
-  let htmlContent = null;
-
-  if (transcriptUrl) {
-    const response = await fetch(transcriptUrl);
-    if (response.ok) {
-      const text = await response.text();
-      if (text.length <= 15 * 1024 * 1024) htmlContent = text;
-    }
-  }
-
+async function storeImportedTranscript({ source, summary, ownerId, ticketOwnerName, ticketName, panelName, closedById, closedByName, transcriptUrl }) {
   const deterministicId = `import-${crypto.createHash('sha256').update(`${config.guildId}:${summary.id}`).digest('hex').slice(0, 48)}`;
   const transcriptId = `${deterministicId}-transcript`;
   const ticketNumber = ticketName.match(/-(\d{4,})$/)?.[1] || null;
@@ -149,7 +138,6 @@ async function storeImportedTranscript({ source, summary, attachmentMessage, own
     importSource: 'discord_transcript',
     sourceCategoryId: source.id,
     transcriptSummaryMessageId: summary.id,
-    transcriptAttachmentMessageId: attachmentMessage?.id || null,
     panelName: panelName || null,
     ticketOwnerName: ticketOwnerName || null,
     closedByName: closedByName || null,
@@ -186,22 +174,21 @@ async function storeImportedTranscript({ source, summary, attachmentMessage, own
       closedById,
       summary.id,
       String(config.importSources.transcriptChannelId),
-      transcriptUrl,
+      transcriptUrl || null,
     ]
   );
 
   if (ownerId) await upsertUser(ownerId, ticketOwnerName || 'Unknown User');
   if (closedById) await upsertStaff(closedById, closedByName || 'Unknown Staff');
 
-  if (htmlContent) {
-    await pool.query('DELETE FROM ticket_transcripts WHERE ticket_id=$1', [deterministicId]);
-    await pool.query(
-      `INSERT INTO ticket_transcripts
-        (id,ticket_id,html_content,discord_url,log_channel_id,log_message_id)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [transcriptId, deterministicId, htmlContent, transcriptUrl, String(config.importSources.transcriptChannelId), summary.id]
-    );
-  }
+  // Discord already hosts the transcript file. Keep only lightweight metadata in PostgreSQL.
+  await pool.query(
+    `DELETE FROM ticket_transcripts WHERE ticket_id=$1;
+     INSERT INTO ticket_transcripts
+       (id,ticket_id,html_content,discord_url,log_channel_id,log_message_id)
+     VALUES ($2,$1,NULL,$3,$4,$5)`,
+    [deterministicId, transcriptId, transcriptUrl || null, String(config.importSources.transcriptChannelId), summary.id]
+  );
 
   await pool.query(
     `INSERT INTO ticket_logs (ticket_id, action, description, metadata)
@@ -212,7 +199,7 @@ async function storeImportedTranscript({ source, summary, attachmentMessage, own
     [deterministicId, `Imported ${ticketName} from Discord transcript channel.`, JSON.stringify({ summaryMessageId: summary.id, sourceCategoryId: source.id, panelName }), summary.id]
   );
 
-  return { ticketId: deterministicId, transcriptUrl, htmlImported: Boolean(htmlContent) };
+  return { ticketId: deterministicId, transcriptUrl, htmlImported: false };
 }
 
 async function runImport(job, sourceKey) {
@@ -232,7 +219,6 @@ async function runImport(job, sourceKey) {
 
   let imported = 0;
   let failed = 0;
-  let htmlCount = 0;
 
   for (let index = 0; index < candidates.length; index += 1) {
     const summary = candidates[index];
@@ -244,7 +230,11 @@ async function runImport(job, sourceKey) {
       fields['closed by'] || fields['closed_by'] || fields['closed by staff'] || fields['handled by'] || ''
     );
     const closedById = parseOwnerId(closedByRaw);
+
+    // The attachment message contains the Discord-hosted transcript HTML.
+    // Only save its URL; never download/copy the HTML into PostgreSQL.
     const attachmentMessage = findAttachmentMessage(messages, messages.indexOf(summary));
+    const transcriptUrl = attachmentMessage?.attachments?.[0]?.url || null;
 
     let ticketOwnerName = cleanText(rawOwner);
     let closedByName = cleanText(closedByRaw);
@@ -259,19 +249,18 @@ async function runImport(job, sourceKey) {
         if (closedByMember) closedByName = closedByMember.nick || closedByMember.user?.global_name || closedByMember.user?.username || closedByName;
       }
 
-      const result = await storeImportedTranscript({
+      await storeImportedTranscript({
         source,
         summary,
-        attachmentMessage,
         ownerId,
         ticketOwnerName,
         ticketName,
         panelName: cleanText(fields['panel name']),
         closedById,
         closedByName,
+        transcriptUrl,
       });
       imported += 1;
-      if (result.htmlImported) htmlCount += 1;
     } catch (error) {
       failed += 1;
       console.error('[IMPORT ITEM FAILED]', ticketName, error.message);
@@ -284,8 +273,8 @@ async function runImport(job, sourceKey) {
     status: 'completed',
     progress: 100,
     stage: 'Import complete',
-    message: `${source.label}: ${imported} imported, ${failed} failed, ${htmlCount} transcripts saved.`,
-    result: { imported, failed, htmlCount, categoryId: source.id, transcriptChannelId: channelId },
+    message: `${source.label}: ${imported} imported, ${failed} failed.`,
+    result: { imported, failed, categoryId: source.id, transcriptChannelId: channelId },
   });
 }
 
