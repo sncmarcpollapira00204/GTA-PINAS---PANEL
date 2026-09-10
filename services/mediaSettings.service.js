@@ -17,9 +17,9 @@ function positiveMilliseconds(value, fallback) {
 
 const MEDIA_CONFIG_CACHE_MS = positiveMilliseconds(process.env.MEDIA_CONFIG_CACHE_MS, 30_000);
 const SLOT_CONFIG = Object.freeze({
-  dashboard_banner: { label: 'Dashboard Banner', defaultUrl: '/assets/gtapinasbg.gif?v=20260911', defaultKind: 'image', defaultMimeType: 'image/gif', maxBytes: positiveMegabytes(process.env.MEDIA_MAX_DASHBOARD_MB, 20), allowedMimeTypes: new Set(['image/png','image/jpeg','image/webp','image/gif','video/webm']) },
-  login_banner: { label: 'Login / Web Banner', defaultUrl: '/assets/gtapinasbg.gif?v=20260911', defaultKind: 'image', defaultMimeType: 'image/gif', maxBytes: positiveMegabytes(process.env.MEDIA_MAX_LOGIN_MB, 40), allowedMimeTypes: new Set(['image/png','image/jpeg','image/webp','image/gif','video/webm','video/mp4']) },
-  login_music: { label: 'Web Music', defaultUrl: '/assets/gtapinasmusic.MP3?v=20260911', defaultKind: 'audio', defaultMimeType: 'audio/mpeg', maxBytes: positiveMegabytes(process.env.MEDIA_MAX_AUDIO_MB, 20), allowedMimeTypes: new Set(['audio/mpeg','audio/ogg','audio/wav','audio/webm']) },
+  dashboard_banner: { label: 'Dashboard Banner', defaultUrl: '/assets/gtapinasbg.gif?v=20260911-musicfix2', defaultKind: 'image', defaultMimeType: 'image/gif', maxBytes: positiveMegabytes(process.env.MEDIA_MAX_DASHBOARD_MB, 20), allowedMimeTypes: new Set(['image/png','image/jpeg','image/webp','image/gif','video/webm']) },
+  login_banner: { label: 'Login / Web Banner', defaultUrl: '/assets/gtapinasbg.gif?v=20260911-musicfix2', defaultKind: 'image', defaultMimeType: 'image/gif', maxBytes: positiveMegabytes(process.env.MEDIA_MAX_LOGIN_MB, 40), allowedMimeTypes: new Set(['image/png','image/jpeg','image/webp','image/gif','video/webm','video/mp4']) },
+  login_music: { label: 'Web Music', defaultUrl: '/assets/gtapinasmusic.MP3?v=20260911-musicfix2', defaultKind: 'audio', defaultMimeType: 'audio/mpeg', maxBytes: positiveMegabytes(process.env.MEDIA_MAX_AUDIO_MB, 20), allowedMimeTypes: new Set(['audio/mpeg','audio/ogg','audio/wav','audio/webm']) },
 });
 const SLOT_NAMES = Object.freeze(Object.keys(SLOT_CONFIG));
 const MIME_EXTENSION = Object.freeze({'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','video/webm':'webm','video/mp4':'mp4','audio/mpeg':'mp3','audio/ogg':'ogg','audio/wav':'wav','audio/webm':'webm'});
