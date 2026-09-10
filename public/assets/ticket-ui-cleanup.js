@@ -10,7 +10,7 @@
     const style = document.createElement('style');
     style.id = 'ticket-ui-cleanup-styles';
     style.textContent = `
-      /* GTA Pinas does not use the legacy whitelist/import/backup modules. */
+      /* GTA Pinas does not use the legacy whitelist/import/backup/staff modules. */
       #nav-whitelist-menu,
       [data-nav-group="whitelist"],
       #view-whitelist-check,
@@ -22,6 +22,8 @@
       #view-staff-performance,
       #nav-management-menu [data-target="view-staff"],
       #nav-management-menu [data-target="view-staff-performance"],
+      #nav-management-menu [data-view="staff"],
+      #nav-management-menu [data-view="staff-performance"],
       #stat-staff,
       #stat-pending-whitelist,
       #stat-whitelisted {
@@ -153,9 +155,30 @@
     });
   }
 
+  function hideManageStaffMenuItem() {
+    const management = document.querySelector('#nav-management-menu');
+    if (!management) return;
+
+    management.querySelectorAll('*').forEach((el) => {
+      if (el.dataset.gtaPinasHidden === 'true') return;
+
+      const label = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (label !== 'Manage Staff') return;
+
+      const target = el.closest('a, button, li, [role="menuitem"], .nav-item, .sidebar-item');
+      if (target && target !== management) {
+        target.style.setProperty('display', 'none', 'important');
+        target.dataset.gtaPinasHidden = 'true';
+      }
+    });
+  }
+
   function observeBranding() {
     if (brandingObserver) return;
-    brandingObserver = new MutationObserver(() => applyGtaPinasBranding(document));
+    brandingObserver = new MutationObserver(() => {
+      applyGtaPinasBranding(document);
+      hideManageStaffMenuItem();
+    });
     brandingObserver.observe(document.body, { childList: true, subtree: true });
   }
 
@@ -199,6 +222,7 @@
   function init() {
     installStyles();
     applyGtaPinasBranding(document);
+    hideManageStaffMenuItem();
     observeBranding();
     removePriorityColumn();
     observeTicketRows();
