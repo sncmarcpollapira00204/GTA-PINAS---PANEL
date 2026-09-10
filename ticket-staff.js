@@ -16,17 +16,20 @@ module.exports = {
     },
 
     ticketAssignOptions: [
-        { label: 'YORME', userId: '852940366230323250', categoryId: '1505162819065221130', description: 'FACTION MODERATOR' },
-        { label: 'ASTRIA', userId: '862348507863449631', categoryId: '1505162819065221130', description: 'ADMIN' },
-        { label: 'BALONG', userId: '782877398860562472', categoryId: '1505162742951186542', description: 'MAPPING TEAM' },
-        { label: 'BROMINE', userId: '474487966539055104', categoryId: '1505162742951186542', description: 'GANG MODERATOR' },
-        { label: 'DIZEUCE', userId: '311658010906984448', categoryId: '1505162470224953394', description: 'GANG MODERATOR' },
-        { label: 'GUILLOTINE', userId: '992789429343223828', categoryId: '1505162470224953394', description: 'FACTION MODERATOR' },
-        { label: 'GYDEON', userId: '692015347192299560', categoryId: '1505162371499298877', description: 'MAPPING TEAM' },
-        { label: 'QUINTILIAN', userId: '217260561224695808', categoryId: '1505162371499298877', description: 'ADMIN' },
-        { label: 'TRISHA', userId: '679270913719533569', categoryId: '1505162218583625818', description: 'FACTION MODERATOR' },
-        { label: 'VINCENT', userId: '1071819331517829242', categoryId: '1505162218583625818', description: 'ADMIN' },
-        { label: 'XINDO', userId: '634627698584715290', categoryId: '1505162218583625818', description: 'GANG MODERATOR' },
-        { label: 'LUPIN', userId: '735045975378362401', categoryId: '1505162218583625818', description: 'DISCORD MODERATOR' }
+        { label: 'YORME', userId: '852940366230323250', categoryId: '1505162819065221130', description: 'Faction Moderator' },
+        { label: 'ASTRIA', userId: '862348507863449631', categoryId: '1505162819065221130', description: 'Admin' },
+        { label: 'BALONG', userId: '782877398860562472', categoryId: '1505162742951186542', description: 'Mapping Team' },
+        { label: 'BROMINE', userId: '474487966539055104', categoryId: '1505162742951186542', description: 'Gang Moderator' },
+        { label: 'DIZEUCE', userId: '311658010906984448', categoryId: '1505162470224953394', description: 'Gang Moderator' },
+        { label: 'GUILLOTINE', userId: '992789429343223828', categoryId: '1505162470224953394', description: 'Faction Moderator' },
+        { label: 'GYDEON', userId: '692015347192299560', categoryId: '1505162371499298877', description: 'Mapping Team' },
+        { label: 'QUINTILIAN', userId: '217260561224695808', categoryId: '1505162371499298877', description: 'Admin' },
+        { label: 'TRISHA', userId: '679270913719533569', categoryId: '1505162218583625818', description: 'Faction Moderator' },
+        { label: 'VINCENT', userId: '1071819331517829242', categoryId: '1505162218583625818', description: 'Admin' },
+        { label: 'XINDO', userId: '634627698584715290', categoryId: '1505162218583625818', description: 'Gang Moderator' },
+        { label: 'LUPIN', userId: '735045975378362401', categoryId: '1505162218583625818', description: 'Discord Moderator' },
+        { label: 'CIPHER', userId: '', categoryId: null, description: 'Main Developer' },
+        { label: 'AEZAKMI', userId: '', categoryId: null, description: 'Developer' },
+        { label: 'ZOEY', userId: '', categoryId: null, description: 'Owner' }
     ]
 };
