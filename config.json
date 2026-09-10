@@ -13,6 +13,15 @@
     "Donation": "donation-ticket"
   },
   "mainTranscriptChannelId": "1531349051998732349",
+  "importSources": {
+    "transcriptChannelId": "1531349051998732349",
+    "categories": {
+      "report": "1531348087224926399",
+      "suggestions": "1531460333065994330",
+      "ban_appeal": "1531348383027953906",
+      "booster": "1531855766946840657"
+    }
+  },
   "maxOpenMessagesPerChannel": 1000,
   "maxTranscriptMessagesPerChannel": 1000
 }
