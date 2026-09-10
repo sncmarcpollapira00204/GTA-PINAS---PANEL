@@ -10,42 +10,6 @@
     const style = document.createElement('style');
     style.id = 'ticket-ui-cleanup-styles';
     style.textContent = `
-      /* GTA Pinas does not use the legacy whitelist/import/backup/staff modules. */
-      #nav-whitelist-menu,
-      [data-nav-group="whitelist"],
-      #view-whitelist-check,
-      #view-whitelist-pending,
-      #view-whitelist-approved,
-      #view-import,
-      #view-backup,
-      #view-staff,
-      #view-staff-performance,
-      #nav-management-menu [data-target="view-staff"],
-      #nav-management-menu [data-target="view-staff-performance"],
-      #nav-management-menu [data-view="staff"],
-      #nav-management-menu [data-view="staff-performance"],
-      #stat-staff,
-      #stat-pending-whitelist,
-      #stat-whitelisted {
-        display: none !important;
-      }
-
-      [data-view="whitelist-check"],
-      [data-view="whitelist-pending"],
-      [data-view="whitelist-approved"],
-      [data-view="import"],
-      [data-view="backup"],
-      [data-view="staff"],
-      [data-view="staff-performance"] {
-        display: none !important;
-      }
-
-      #view-dashboard #stat-staff,
-      #view-dashboard #stat-pending-whitelist,
-      #view-dashboard #stat-whitelisted {
-        display: none !important;
-      }
-
       #view-open-tickets .table-container,
       #view-closed-tickets .table-container {
         border-radius: 10px;
@@ -173,16 +137,6 @@
     });
   }
 
-  function loadCityRulesFeature() {
-    if (document.querySelector('script[data-gta-city-rules]')) return;
-    const script = document.createElement('script');
-    script.src = '/assets/city-rules.js?v=20260910';
-    script.defer = true;
-    script.dataset.gtaCityRules = 'true';
-    script.addEventListener('error', () => console.warn('[CITY RULES] Unable to load city-rules.js.'));
-    document.head.appendChild(script);
-  }
-
   function observeBranding() {
     if (brandingObserver) return;
     brandingObserver = new MutationObserver(() => {
@@ -233,7 +187,6 @@
     installStyles();
     applyGtaPinasBranding(document);
     hideManageStaffMenuItem();
-    loadCityRulesFeature();
     observeBranding();
     removePriorityColumn();
     observeTicketRows();
