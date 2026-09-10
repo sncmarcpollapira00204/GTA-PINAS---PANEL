@@ -26,7 +26,18 @@
     });
 
     document.querySelectorAll('.maintained').forEach((element) => {
-      element.textContent = 'Manage by Zoey';
+      element.textContent = 'Managed by Zoey';
+    });
+
+    document.querySelectorAll('.login-panel').forEach((panel) => {
+      Object.assign(panel.style, {
+        background: 'rgba(8, 16, 31, 0.48)',
+        border: '1px solid rgba(255, 255, 255, 0.22)',
+        borderRadius: '20px',
+        boxShadow: '0 28px 80px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(24px) saturate(125%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(125%)',
+      });
     });
 
     const replacements = [
@@ -35,7 +46,8 @@
       ['5TH AVENUE ROLEPLAY', 'GTA PINAS ROLEPLAY'],
       ['5TH AVENUE', 'GTA PINAS'],
       ['5th Avenue × University registered staff only.', 'GTA Pinas Roleplay Management Panel'],
-      ['Maintained by Yuu - Rora', 'Manage by Zoey'],
+      ['Maintained by Yuu - Rora', 'Managed by Zoey'],
+      ['Manage by Zoey', 'Managed by Zoey'],
     ];
 
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -85,8 +97,7 @@
       height: '100%',
       objectFit: 'cover',
       objectPosition: 'center',
-      zIndex: '0',
-      filter: 'brightness(.60) saturate(.95)',
+      filter: 'brightness(.78) saturate(1.02)',
       pointerEvents: 'none',
       userSelect: 'none',
     });
@@ -98,7 +109,7 @@
       position: 'absolute',
       inset: '0',
       zIndex: '1',
-      background: 'linear-gradient(90deg, rgba(2,8,20,.22), rgba(2,8,20,.46)), linear-gradient(180deg, rgba(2,8,20,.16), rgba(2,8,20,.38))',
+      background: 'linear-gradient(90deg, rgba(2,8,20,.10), rgba(2,8,20,.22)), linear-gradient(180deg, rgba(2,8,20,.04), rgba(2,8,20,.16))',
       pointerEvents: 'none',
     });
 
@@ -114,7 +125,7 @@
 
     // Login OST is intentionally sourced from the repository asset so an old
     // database media override cannot keep playing the previous track.
-    const forcedMusicUrl = `/assets/gtapinasmusic2.mp3?v=20260911-music2`;
+    const forcedMusicUrl = `/assets/gtapinasmusic2.mp3?v=20260911-music3`;
     const resolvedUrl = new URL(forcedMusicUrl, window.location.href).href;
 
     if (audio.src !== resolvedUrl) {
