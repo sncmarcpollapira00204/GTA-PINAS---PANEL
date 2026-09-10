@@ -25,6 +25,20 @@ function needsRefresh(username) {
   return !value || value === 'unknown user' || value === 'archived user' || value === 'discord user';
 }
 
+function buildAvatarUrl(user) {
+  if (!user?.id) return null;
+  if (user.avatar) {
+    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${String(user.avatar).startsWith('a_') ? 'gif' : 'png'}?size=128`;
+  }
+
+  try {
+    const defaultIndex = Number((BigInt(String(user.id)) >> 22n) % 6n);
+    return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`;
+  } catch {
+    return null;
+  }
+}
+
 async function discordGet(path) {
   const token = getToken();
   if (!token) return null;
@@ -40,14 +54,15 @@ async function upsertIdentity(user) {
   if (!user?.id) return false;
   const username = String(user.username || user.global_name || '').trim();
   if (!username) return false;
-  const avatar = user.avatar
-    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${String(user.avatar).startsWith('a_') ? 'gif' : 'png'}?size=128`
-    : null;
+  const avatar = buildAvatarUrl(user);
 
   await pool.query(
     `INSERT INTO users (id, username, avatar, is_bot, updated_at)
      VALUES ($1,$2,$3,FALSE,CURRENT_TIMESTAMP)
-     ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username, avatar=COALESCE(EXCLUDED.avatar, users.avatar), updated_at=CURRENT_TIMESTAMP`,
+     ON CONFLICT (id) DO UPDATE SET
+       username=EXCLUDED.username,
+       avatar=COALESCE(EXCLUDED.avatar, users.avatar),
+       updated_at=CURRENT_TIMESTAMP`,
     [String(user.id), username, avatar]
   );
   return true;
@@ -78,8 +93,14 @@ async function backfill() {
       LEFT JOIN users u ON u.id = t.user_id
       WHERE t.user_id IS NOT NULL
         AND NULLIF(TRIM(t.user_id), '') IS NOT NULL
-        AND (u.id IS NULL OR u.username IS NULL OR LOWER(TRIM(u.username)) IN ('unknown user','archived user','discord user'))
-      LIMIT 50
+        AND (
+          u.id IS NULL
+          OR u.username IS NULL
+          OR LOWER(TRIM(u.username)) IN ('unknown user','archived user','discord user')
+          OR u.avatar IS NULL
+          OR NULLIF(TRIM(u.avatar), '') IS NULL
+        )
+      LIMIT 100
     `);
 
     let updated = 0;
@@ -90,7 +111,7 @@ async function backfill() {
         console.warn(`[IDENTITY BACKFILL] ${row.user_id}: ${error.message}`);
       }
     }
-    if (updated) console.log(`[IDENTITY BACKFILL] Updated ${updated} user identities.`);
+    if (updated) console.log(`[IDENTITY BACKFILL] Updated ${updated} user identities/profiles.`);
   } catch (error) {
     console.warn(`[IDENTITY BACKFILL] ${error.message}`);
   } finally {
@@ -102,8 +123,6 @@ function schedule() {
   if (scheduled) return;
   scheduled = true;
 
-  // server.js initializes the PostgreSQL schema before accepting requests.
-  // Do not hit the database during module loading; Railway may still be starting PostgreSQL.
   const initialDelay = Math.max(30_000, Number(process.env.IDENTITY_BACKFILL_INITIAL_DELAY_MS || 60_000));
   setTimeout(() => void backfill(), initialDelay).unref?.();
   setInterval(() => void backfill(), 10 * 60 * 1000).unref?.();
