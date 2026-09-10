@@ -1,5 +1,6 @@
 const express = require('express');
 const apiController = require('../controllers/api.controller');
+const importController = require('../controllers/import.controller');
 const optimizedController = require('../controllers/optimized.controller');
 const ticketReadController = require('../controllers/ticketRead.controller');
 const ticketSummaryController = require('../controllers/ticketSummary.controller');
@@ -26,6 +27,9 @@ router.get('/tickets', apiController.getTickets);
 router.get('/tickets/:id/transcript', requireTicketReadAccess, transcriptController.getTicketTranscriptHtml);
 router.get('/tickets/:id/summary', requireTicketReadAccess, ticketSummaryController.getTicketSummary);
 router.get('/tickets/:id', requireTicketReadAccess, ticketReadController.getTicketById);
+
+router.post('/import/category/:category', importController.startCategoryImport);
+router.get('/import/jobs/:jobId', importController.getImportJob);
 
 router.get('/v2/tickets', optimizedController.getTicketsPage);
 router.get('/v2/tickets/:id/messages', requireTicketReadAccess, optimizedController.getTicketMessagesPage);
