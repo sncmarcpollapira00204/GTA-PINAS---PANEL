@@ -2,6 +2,7 @@
 
 (() => {
   let ticketObserver = null;
+  let brandingObserver = null;
 
   function installStyles() {
     if (document.getElementById('ticket-ui-cleanup-styles')) return;
@@ -115,6 +116,49 @@
     document.head.appendChild(style);
   }
 
+  function applyGtaPinasBranding(root = document) {
+    const BRAND_REPLACEMENTS = [
+      ['5th Avenue Roleplay', 'GTA Pinas Roleplay'],
+      ['5th Avenue Web Panel', 'GTA Pinas Web Panel'],
+      ['5TH AVENUE ROLEPLAY', 'GTA PINAS ROLEPLAY'],
+      ['5TH AVENUE', 'GTA PINAS'],
+    ];
+
+    const walker = document.createTreeWalker(root.body || root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let node;
+    while ((node = walker.nextNode())) nodes.push(node);
+
+    nodes.forEach((textNode) => {
+      const parent = textNode.parentElement;
+      if (!parent || /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA)$/.test(parent.tagName)) return;
+
+      let text = textNode.nodeValue || '';
+      let next = text;
+      BRAND_REPLACEMENTS.forEach(([from, to]) => {
+        next = next.split(from).join(to);
+      });
+      if (next !== text) textNode.nodeValue = next;
+    });
+
+    document.title = 'GTA Pinas Roleplay Panel';
+
+    root.querySelectorAll('img.logo, .sidebar-header img, img[alt*="5th" i]').forEach((img) => {
+      const src = img.getAttribute('src') || '';
+      if (src !== '/assets/gta-pinas-logo.svg') {
+        img.setAttribute('src', '/assets/gta-pinas-logo.svg');
+      }
+      img.setAttribute('alt', 'GTA Pinas Roleplay');
+      img.removeAttribute('srcset');
+    });
+  }
+
+  function observeBranding() {
+    if (brandingObserver) return;
+    brandingObserver = new MutationObserver(() => applyGtaPinasBranding(document));
+    brandingObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
   function removePriorityColumn() {
     const table = document.querySelector('#view-open-tickets table');
     if (!table) return;
@@ -154,6 +198,8 @@
 
   function init() {
     installStyles();
+    applyGtaPinasBranding(document);
+    observeBranding();
     removePriorityColumn();
     observeTicketRows();
   }
