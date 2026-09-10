@@ -4,6 +4,7 @@ const pool = require('../db');
 
 const DISCORD_API = 'https://discord.com/api/v10';
 let running = false;
+let scheduled = false;
 
 function cleanSecret(value) {
   const text = String(value || '').trim();
@@ -98,8 +99,14 @@ async function backfill() {
 }
 
 function schedule() {
-  void backfill();
-  setInterval(() => void backfill(), 10 * 60 * 1000).unref();
+  if (scheduled) return;
+  scheduled = true;
+
+  // server.js initializes the PostgreSQL schema before accepting requests.
+  // Do not hit the database during module loading; Railway may still be starting PostgreSQL.
+  const initialDelay = Math.max(30_000, Number(process.env.IDENTITY_BACKFILL_INITIAL_DELAY_MS || 60_000));
+  setTimeout(() => void backfill(), initialDelay).unref?.();
+  setInterval(() => void backfill(), 10 * 60 * 1000).unref?.();
 }
 
 module.exports = { backfill, schedule, needsRefresh };
