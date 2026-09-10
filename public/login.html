@@ -15,300 +15,52 @@
             --discord-color: #5865F2;
             --discord-hover: #4752C4;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         html, body { width: 100%; min-height: 100%; }
-
         body {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background:
-                linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-                url('/assets/fave.gif?v=20260806-university') no-repeat center center/cover;
-            color: var(--text-primary);
-            overflow: hidden;
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.5)), url('/assets/fave.gif?v=20260806-university') no-repeat center center/cover;
+            color: var(--text-primary); overflow: hidden;
         }
-
-        .page {
-            position: relative;
-            min-height: 100vh;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
+        .page { position: relative; min-height: 100vh; width: 100%; display: flex; justify-content: center; align-items: center; padding: 24px; }
+        .login-card, .login-panel {
+            position: relative; z-index: 2; background: var(--panel-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border); border-radius: 16px; padding: 40px 32px; width: 90%; max-width: 440px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,.5); text-align: center; animation: fadeIn .8s ease-out;
         }
-
-        .login-card,
-        .login-panel {
-            position: relative;
-            z-index: 2;
-            background: var(--panel-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--panel-border);
-            border-radius: 16px;
-            padding: 40px 32px;
-            width: 90%;
-            max-width: 440px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            animation: fadeIn 0.8s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        .header,
-        .brand {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .logo {
-            width: 64px;
-            height: 64px;
-            background: transparent;
-            border-radius: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            box-shadow: none;
-            flex: 0 0 64px;
-            overflow: visible;
-        }
-
-        .logo img {
-            width: 64px;
-            height: 64px;
-            max-width: 64px;
-            object-fit: contain;
-            display: block;
-            mix-blend-mode: screen;
-            background: transparent;
-            filter: drop-shadow(0 8px 15px rgba(22, 119, 255, 0.24));
-        }
-
+        @keyframes fadeIn { from { opacity: 0; transform: scale(.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .header, .brand { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px; }
+        .logo { width: 64px; height: 64px; background: transparent; border-radius: 0; display: flex; align-items: center; justify-content: center; border: none; box-shadow: none; flex: 0 0 64px; overflow: visible; }
+        .logo img { width: 64px; height: 64px; max-width: 64px; object-fit: contain; display: block; mix-blend-mode: screen; background: transparent; filter: drop-shadow(0 8px 15px rgba(22,119,255,.24)); }
         .header-text { text-align: left; }
-        .subtitle {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        .title,
-        .brand h1 {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            line-height: 1.2;
-        }
-
-        .description {
-            font-size: 14px;
-            line-height: 1.6;
-            color: var(--text-secondary);
-            margin-bottom: 32px;
-            padding: 0 10px;
-        }
-
-        .notice {
-            display: none;
-            margin-bottom: 16px;
-            padding: 13px 14px;
-            border: 1px solid rgba(255, 105, 135, 0.42);
-            border-radius: 8px;
-            color: #fff;
-            background: rgba(119, 25, 45, 0.78);
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
+        .subtitle { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); margin-bottom: 4px; }
+        .title, .brand h1 { font-size: 20px; font-weight: 700; letter-spacing: -.5px; line-height: 1.2; }
+        .description { font-size: 14px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 32px; padding: 0 10px; }
+        .notice { display: none; margin-bottom: 16px; padding: 13px 14px; border: 1px solid rgba(255,105,135,.42); border-radius: 8px; color: #fff; background: rgba(119,25,45,.78); font-size: 13px; line-height: 1.5; }
         .notice.show { display: block; }
-
-        .discord-btn,
-        .discord-login {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            background-color: var(--discord-color);
-            color: white;
-            text-decoration: none;
-            padding: 14px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-bottom: 28px;
-            border: none;
-            cursor: pointer;
-        }
-
+        .discord-btn, .discord-login { display: flex; align-items: center; justify-content: center; gap: 12px; background-color: var(--discord-color); color: white; text-decoration: none; padding: 14px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; transition: all .3s ease; width: 100%; margin-bottom: 28px; border: none; cursor: pointer; }
         .discord-btn i { font-size: 20px; }
-
-        .discord-btn:hover,
-        .discord-login:hover {
-            background-color: var(--discord-hover);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(88, 101, 242, 0.4);
-        }
-
-        .discord-login svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-        }
-
-        .footer,
-        .access-note {
-            border-top: 1px solid var(--panel-border);
-            padding-top: 24px;
-        }
-
-        .footer p,
-        .access-note {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-
-        .footer p:last-child,
-        .maintained {
-            margin-bottom: 0;
-            font-size: 11px;
-            opacity: 0.7;
-        }
-
+        .discord-btn:hover, .discord-login:hover { background-color: var(--discord-hover); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(88,101,242,.4); }
+        .footer, .access-note { border-top: 1px solid var(--panel-border); padding-top: 24px; }
+        .footer p, .access-note { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+        .footer p:last-child, .maintained { margin-bottom: 0; font-size: 11px; opacity: .7; }
         .maintained { margin-top: 6px; }
-
-        .ost-player,
-        .music-player {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 5;
-            background: rgba(17, 19, 31, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--panel-border);
-            border-radius: 40px;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            animation: slideIn 1s ease-out 0.5s both;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(50px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .play-btn,
-        .ost-toggle {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--discord-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .play-btn:hover,
-        .ost-toggle:hover {
-            background: var(--discord-hover);
-            transform: scale(1.05);
-        }
-
-        .track-info,
-        .ost-copy {
-            display: flex;
-            flex-direction: column;
-            min-width: 140px;
-        }
-
-        .track-title,
-        .ost-watermark {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .progress-bar,
-        .ost-progress {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 2px;
-            margin-top: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress,
-        .ost-progress-fill {
-            width: 45%;
-            height: 100%;
-            background: var(--discord-color);
-            border-radius: 2px;
-        }
-
+        .ost-player, .music-player { position: fixed; bottom: 30px; right: 30px; z-index: 5; background: rgba(17,19,31,.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--panel-border); border-radius: 40px; padding: 10px 20px; display: flex; align-items: center; gap: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.4); animation: slideIn 1s ease-out .5s both; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+        .play-btn, .ost-toggle { width: 36px; height: 36px; border-radius: 50%; background: var(--discord-color); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all .3s; }
+        .play-btn:hover, .ost-toggle:hover { background: var(--discord-hover); transform: scale(1.05); }
+        .track-info, .ost-copy { display: flex; flex-direction: column; min-width: 140px; }
+        .track-title, .ost-watermark { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        .progress-bar, .ost-progress { width: 100%; height: 4px; background: rgba(255,255,255,.15); border-radius: 2px; margin-top: 8px; position: relative; overflow: hidden; }
+        .progress, .ost-progress-fill { width: 45%; height: 100%; background: var(--discord-color); border-radius: 2px; }
         .ost-progress-fill { width: 0; }
-
-        .volume-btn,
-        .ost-mute {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 16px;
-            transition: color 0.2s;
-        }
-
-        .volume-btn:hover,
-        .ost-mute:hover { color: var(--text-primary); }
-
-        .ost-equalizer,
-        .ost-status { display: none; }
-
+        .volume-btn, .ost-mute { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 16px; transition: color .2s; }
+        .volume-btn:hover, .ost-mute:hover { color: var(--text-primary); }
+        .ost-equalizer, .ost-status { display: none; }
         @media (max-width: 600px) {
             body { overflow: auto; }
-            .music-player,
-            .ost-player {
-                bottom: 20px;
-                right: 50%;
-                transform: translateX(50%);
-            }
-
-            @keyframes slideIn {
-                from { opacity: 0; transform: translate(50%, 50px); }
-                to { opacity: 1; transform: translate(50%, 0); }
-            }
+            .music-player, .ost-player { bottom: 20px; right: 50%; transform: translateX(50%); }
+            @keyframes slideIn { from { opacity: 0; transform: translate(50%,50px); } to { opacity: 1; transform: translate(50%,0); } }
         }
     </style>
 </head>
@@ -316,189 +68,49 @@
     <main class="page">
         <div class="login-card login-panel">
             <div class="header brand">
-                <div class="logo">
-                    <img src="/assets/gta-pinas-logo.svg" alt="GTA Pinas Revamped">
-                </div>
+                <div class="logo"><img src="/assets/gta-pinas-logo.svg" alt="GTA Pinas Revamped"></div>
                 <div class="header-text">
                     <div class="subtitle">Ticket Support</div>
                     <div class="title" id="loginTitle">GTA Pinas Roleplay</div>
                 </div>
             </div>
-
-            <p class="description">
-                Sign in using your registered Discord admin account to access the panel.
-            </p>
-
+            <p class="description">Sign in using your registered Discord admin account to access the panel.</p>
             <div id="noticeBox" class="notice" role="alert"></div>
-
-            <a id="discordLoginButton" href="/auth/discord" class="discord-btn discord-login">
-                <i class="fa-brands fa-discord"></i>
-                <span>Continue with Discord</span>
-            </a>
-
+            <a id="discordLoginButton" href="/auth/discord" class="discord-btn discord-login"><i class="fa-brands fa-discord"></i><span>Continue with Discord</span></a>
             <div class="footer">
                 <p>GTA Pinas Roleplay Management Panel</p>
-                <p>Managed by Zone</p>
+                <p>Managed by Zoey</p>
             </div>
         </div>
     </main>
-
     <aside id="ostPlayer" class="music-player ost-player" data-state="loading" aria-label="GTA Pinas soundtrack player">
         <audio id="loginOst" src="/assets/gtapinasmusic2.mp3?v=20260911-music5" preload="auto" autoplay loop></audio>
-        <button id="ostToggle" class="play-btn ost-toggle" type="button" aria-label="Play soundtrack" aria-pressed="false">
-            <i class="fa-solid fa-pause"></i>
-        </button>
-        <div class="track-info ost-copy">
-            <span class="track-title ost-watermark">GTA Pinas OST</span>
-            <div id="ostProgress" class="progress-bar" role="slider" tabindex="0" aria-label="Soundtrack progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <div id="ostProgressFill" class="progress ost-progress-fill"></div>
-            </div>
-            <span id="ostStatus" class="ost-status">Loading soundtrack...</span>
-        </div>
-        <button id="ostMute" class="volume-btn ost-mute" type="button" aria-label="Mute soundtrack" aria-pressed="false">
-            <i class="fa-solid fa-volume-high"></i>
-        </button>
+        <button id="ostToggle" class="play-btn ost-toggle" type="button" aria-label="Play soundtrack" aria-pressed="false"><i class="fa-solid fa-pause"></i></button>
+        <div class="track-info ost-copy"><span class="track-title ost-watermark">GTA Pinas OST</span><div id="ostProgress" class="progress-bar" role="slider" tabindex="0" aria-label="Soundtrack progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="ostProgressFill" class="progress ost-progress-fill"></div></div><span id="ostStatus" class="ost-status">Loading soundtrack...</span></div>
+        <button id="ostMute" class="volume-btn ost-mute" type="button" aria-label="Mute soundtrack" aria-pressed="false"><i class="fa-solid fa-volume-high"></i></button>
     </aside>
-
     <script>
         const noticeBox = document.getElementById('noticeBox');
         const params = new URLSearchParams(window.location.search);
         const error = params.get('error');
         const customMessage = params.get('message');
         const expired = params.get('expired');
-
-        const messages = {
-            access_denied: 'Discord authorization was cancelled.',
-            cancelled: 'Discord authorization was cancelled.',
-            denied: 'YOU ARE NOT A REGISTERED ADMIN.',
-            not_authorized: 'YOU ARE NOT A REGISTERED ADMIN.',
-            not_member: 'YOU ARE NOT A REGISTERED ADMIN.',
-            auth_required: 'Please sign in using your registered Discord admin account.',
-            session_expired: 'Your session expired. Please sign in again.',
-            token_exchange_failed: 'Discord login could not be completed. Please try again.',
-            oauth_expired: 'That Discord login link was already used or expired. Please start a new login.',
-            invalid_state: 'The login session expired. Please start the Discord login again.',
-            oauth_configuration: 'Discord OAuth is not configured correctly on the Web Panel.',
-            discord_error: 'Discord could not complete the login request. Please try again.',
-            server: 'A server error occurred during login. Please try again.',
-            login_failed: 'A server error occurred during login. Please try again.'
-        };
-
-        const noticeText = customMessage || messages[error] || (expired === '1'
-            ? 'Your session expired. Please sign in again.'
-            : '');
-
-        if (noticeText) {
-            noticeBox.textContent = noticeText;
-            noticeBox.classList.add('show');
-        }
-
+        const messages = { access_denied:'Discord authorization was cancelled.', cancelled:'Discord authorization was cancelled.', denied:'YOU ARE NOT A REGISTERED ADMIN.', not_authorized:'YOU ARE NOT A REGISTERED ADMIN.', not_member:'YOU ARE NOT A REGISTERED ADMIN.', auth_required:'Please sign in using your registered Discord admin account.', session_expired:'Your session expired. Please sign in again.', token_exchange_failed:'Discord login could not be completed. Please try again.', oauth_expired:'That Discord login link was already used or expired. Please start a new login.', invalid_state:'The login session expired. Please start the Discord login again.', oauth_configuration:'Discord OAuth is not configured correctly on the Web Panel.', discord_error:'Discord could not complete the login request. Please try again.', server:'A server error occurred during login. Please try again.', login_failed:'A server error occurred during login. Please try again.' };
+        const noticeText = customMessage || messages[error] || (expired === '1' ? 'Your session expired. Please sign in again.' : '');
+        if (noticeText) { noticeBox.textContent = noticeText; noticeBox.classList.add('show'); }
         const loginButton = document.getElementById('discordLoginButton');
-        loginButton?.addEventListener('click', () => {
-            loginButton.style.pointerEvents = 'none';
-            loginButton.style.opacity = '0.72';
-            const label = loginButton.querySelector('span');
-            if (label) label.textContent = 'Connecting to Discord...';
-        }, { once: true });
-
-        const ostAudio = document.getElementById('loginOst');
-        const ostToggle = document.getElementById('ostToggle');
-        const ostMute = document.getElementById('ostMute');
-        const ostStatus = document.getElementById('ostStatus');
-        const ostProgress = document.getElementById('ostProgress');
-        const ostProgressFill = document.getElementById('ostProgressFill');
-
-        const playIcon = '<i class="fa-solid fa-play"></i>';
-        const pauseIcon = '<i class="fa-solid fa-pause"></i>';
-        const volumeIcon = '<i class="fa-solid fa-volume-high"></i>';
-        const muteIcon = '<i class="fa-solid fa-volume-xmark"></i>';
-
-        function formatTime(seconds) {
-            if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-            const minutes = Math.floor(seconds / 60);
-            const remainder = Math.floor(seconds % 60).toString().padStart(2, '0');
-            return `${minutes}:${remainder}`;
-        }
-
-        function updateOstState() {
-            const playing = !ostAudio.paused && !ostAudio.ended;
-            ostToggle.innerHTML = playing ? pauseIcon : playIcon;
-            ostToggle.setAttribute('aria-label', playing ? 'Pause soundtrack' : 'Play soundtrack');
-            ostToggle.setAttribute('aria-pressed', String(playing));
-            ostStatus.textContent = playing
-                ? `${formatTime(ostAudio.currentTime)} / ${formatTime(ostAudio.duration)}`
-                : 'Paused';
-        }
-
-        async function playOst() {
-            try {
-                await ostAudio.play();
-                updateOstState();
-            } catch (_) {
-                ostStatus.textContent = 'Press play to listen';
-                ostToggle.innerHTML = playIcon;
-                ostToggle.setAttribute('aria-label', 'Play soundtrack');
-                ostToggle.setAttribute('aria-pressed', 'false');
-            }
-        }
-
-        function updateOstProgress() {
-            const duration = Number(ostAudio.duration) || 0;
-            const progress = duration ? Math.min(100, (ostAudio.currentTime / duration) * 100) : 0;
-            ostProgressFill.style.width = `${progress}%`;
-            ostProgress.setAttribute('aria-valuenow', String(Math.round(progress)));
-            if (!ostAudio.paused) {
-                ostStatus.textContent = `${formatTime(ostAudio.currentTime)} / ${formatTime(duration)}`;
-            }
-        }
-
-        function seekOst(clientX) {
-            const bounds = ostProgress.getBoundingClientRect();
-            const ratio = Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
-            if (Number.isFinite(ostAudio.duration)) {
-                ostAudio.currentTime = ratio * ostAudio.duration;
-                updateOstProgress();
-            }
-        }
-
-        ostAudio.volume = 0.28;
-
-        ostToggle.addEventListener('click', () => {
-            if (ostAudio.paused) playOst();
-            else ostAudio.pause();
-        });
-
-        ostMute.addEventListener('click', () => {
-            ostAudio.muted = !ostAudio.muted;
-            ostMute.innerHTML = ostAudio.muted ? muteIcon : volumeIcon;
-            ostMute.setAttribute('aria-label', ostAudio.muted ? 'Unmute soundtrack' : 'Mute soundtrack');
-            ostMute.setAttribute('aria-pressed', String(ostAudio.muted));
-        });
-
-        ostProgress.addEventListener('click', (event) => seekOst(event.clientX));
-        ostProgress.addEventListener('keydown', (event) => {
-            if (!Number.isFinite(ostAudio.duration)) return;
-            if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-                event.preventDefault();
-                const direction = event.key === 'ArrowRight' ? 1 : -1;
-                ostAudio.currentTime = Math.max(0, Math.min(ostAudio.duration, ostAudio.currentTime + (direction * 5)));
-                updateOstProgress();
-            }
-        });
-
-        ostAudio.addEventListener('loadedmetadata', () => {
-            ostStatus.textContent = `0:00 / ${formatTime(ostAudio.duration)}`;
-            updateOstProgress();
-        });
-        ostAudio.addEventListener('timeupdate', updateOstProgress);
-        ostAudio.addEventListener('play', updateOstState);
-        ostAudio.addEventListener('pause', updateOstState);
-        ostAudio.addEventListener('ended', updateOstState);
-        ostAudio.addEventListener('error', () => {
-            ostStatus.textContent = 'Soundtrack unavailable';
-        });
-
-        playOst();
+        loginButton?.addEventListener('click', () => { loginButton.style.pointerEvents='none'; loginButton.style.opacity='.72'; const label=loginButton.querySelector('span'); if(label) label.textContent='Connecting to Discord...'; }, {once:true});
+        const ostAudio=document.getElementById('loginOst'), ostToggle=document.getElementById('ostToggle'), ostMute=document.getElementById('ostMute'), ostStatus=document.getElementById('ostStatus'), ostProgress=document.getElementById('ostProgress'), ostProgressFill=document.getElementById('ostProgressFill');
+        const playIcon='<i class="fa-solid fa-play"></i>', pauseIcon='<i class="fa-solid fa-pause"></i>', volumeIcon='<i class="fa-solid fa-volume-high"></i>', muteIcon='<i class="fa-solid fa-volume-xmark"></i>';
+        function formatTime(seconds){ if(!Number.isFinite(seconds)||seconds<0)return'0:00'; const minutes=Math.floor(seconds/60), remainder=Math.floor(seconds%60).toString().padStart(2,'0'); return `${minutes}:${remainder}`; }
+        function updateOstState(){ const playing=!ostAudio.paused&&!ostAudio.ended; ostToggle.innerHTML=playing?pauseIcon:playIcon; ostToggle.setAttribute('aria-label',playing?'Pause soundtrack':'Play soundtrack'); ostToggle.setAttribute('aria-pressed',String(playing)); ostStatus.textContent=playing?`${formatTime(ostAudio.currentTime)} / ${formatTime(ostAudio.duration)}`:'Paused'; }
+        async function playOst(){ try{await ostAudio.play();updateOstState();}catch(_){ostStatus.textContent='Press play to listen';ostToggle.innerHTML=playIcon;ostToggle.setAttribute('aria-label','Play soundtrack');ostToggle.setAttribute('aria-pressed','false');} }
+        function updateOstProgress(){ const duration=Number(ostAudio.duration)||0; const progress=duration?Math.min(100,(ostAudio.currentTime/duration)*100):0; ostProgressFill.style.width=`${progress}%`; ostProgress.setAttribute('aria-valuenow',String(Math.round(progress))); }
+        ostToggle.addEventListener('click',()=>{if(ostAudio.paused)playOst();else{ostAudio.pause();updateOstState();}});
+        ostMute.addEventListener('click',()=>{ostAudio.muted=!ostAudio.muted;ostMute.innerHTML=ostAudio.muted?muteIcon:volumeIcon;ostMute.setAttribute('aria-label',ostAudio.muted?'Unmute soundtrack':'Mute soundtrack');ostMute.setAttribute('aria-pressed',String(ostAudio.muted));});
+        ostAudio.addEventListener('play',updateOstState); ostAudio.addEventListener('pause',updateOstState); ostAudio.addEventListener('timeupdate',()=>{updateOstProgress();updateOstState();}); ostAudio.addEventListener('loadedmetadata',updateOstState); ostAudio.addEventListener('ended',updateOstState); ostAudio.addEventListener('error',()=>{ostStatus.textContent='Soundtrack unavailable';});
+        ostProgress.addEventListener('click',(event)=>{const rect=ostProgress.getBoundingClientRect(),ratio=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width)),duration=Number(ostAudio.duration)||0;if(duration)ostAudio.currentTime=ratio*duration;});
+        document.addEventListener('DOMContentLoaded',playOst); playOst();
     </script>
 </body>
 </html>
