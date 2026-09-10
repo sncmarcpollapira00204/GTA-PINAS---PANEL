@@ -18,10 +18,7 @@
 }
 
 #view-dashboard::before,
-#view-dashboard::after {
-    pointer-events: none;
-}
-
+#view-dashboard::after { pointer-events: none; }
 #view-dashboard::before {
     content: "";
     position: absolute;
@@ -29,7 +26,6 @@
     z-index: -1;
     background: linear-gradient(135deg, rgba(255,255,255,.025), transparent 42%);
 }
-
 #view-dashboard > .dashboard-dynamic-media { display: none !important; }
 
 #view-dashboard .dashboard-header {
@@ -51,9 +47,7 @@
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
-
 #view-dashboard .dashboard-header::after { content: none !important; }
-
 #view-dashboard .dashboard-brand-copy {
     position: static !important;
     z-index: auto !important;
@@ -67,7 +61,6 @@
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
-
 #view-dashboard .dashboard-brand-copy h1 {
     margin: 0 !important;
     color: var(--text-main) !important;
@@ -77,7 +70,6 @@
     letter-spacing: -.035em !important;
     text-shadow: none !important;
 }
-
 #view-dashboard .dashboard-brand-copy p {
     margin: 8px 0 0 !important;
     color: var(--text-sec) !important;
@@ -85,7 +77,6 @@
     line-height: 1.55 !important;
     text-shadow: none !important;
 }
-
 #view-dashboard .dashboard-header > .btn {
     position: static !important;
     z-index: auto !important;
@@ -99,13 +90,11 @@
     box-shadow: 0 10px 28px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.06) !important;
     transition: transform .18s ease, background .18s ease, border-color .18s ease !important;
 }
-
 #view-dashboard .dashboard-header > .btn:hover {
     transform: translateY(-1px) !important;
     background: rgba(88,101,242,.22) !important;
     border-color: rgba(88,101,242,.55) !important;
 }
-
 #view-dashboard .dashboard-stats-grid {
     position: relative;
     z-index: 1;
@@ -115,7 +104,6 @@
     margin-top: 0 !important;
     margin-bottom: 28px !important;
 }
-
 #view-dashboard .dashboard-stat-card {
     position: relative !important;
     min-height: 126px !important;
@@ -129,7 +117,6 @@
     overflow: hidden !important;
     transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease !important;
 }
-
 #view-dashboard .dashboard-stat-card::before {
     content: "";
     position: absolute;
@@ -137,13 +124,11 @@
     background: radial-gradient(circle at 100% 0, rgba(88,101,242,.10), transparent 42%);
     pointer-events: none;
 }
-
 #view-dashboard .dashboard-stat-card:hover {
     transform: translateY(-2px) !important;
     border-color: rgba(255,255,255,.13) !important;
     box-shadow: 0 18px 42px rgba(0,0,0,.28), 0 0 0 1px rgba(88,101,242,.08) inset !important;
 }
-
 #view-dashboard .dashboard-stat-card .stat-label,
 #view-dashboard .dashboard-stat-card .label {
     color: var(--text-sec) !important;
@@ -152,7 +137,6 @@
     text-transform: uppercase !important;
     letter-spacing: .075em !important;
 }
-
 #view-dashboard .dashboard-stat-card .stat-value,
 #view-dashboard .dashboard-stat-card .value {
     margin-top: 8px !important;
@@ -162,7 +146,6 @@
     font-weight: 750 !important;
     letter-spacing: -.035em !important;
 }
-
 #view-dashboard .dashboard-stat-card .stat-icon,
 #view-dashboard .dashboard-stat-card .icon {
     border-radius: 11px !important;
@@ -170,8 +153,6 @@
     border: 1px solid rgba(88,101,242,.16) !important;
     color: #8790ff !important;
 }
-
-/* The lower dashboard sections should read like the supplied glass-panel reference. */
 #view-dashboard .card,
 #view-dashboard .panel,
 #view-dashboard .table-container,
@@ -183,23 +164,18 @@
     backdrop-filter: blur(14px) !important;
     -webkit-backdrop-filter: blur(14px) !important;
 }
-
 #view-dashboard .card:hover,
 #view-dashboard .dashboard-card:hover { border-color: rgba(255,255,255,.12) !important; }
-
 #view-dashboard table th {
     color: #858ca3 !important;
     background: rgba(8,10,16,.28) !important;
     font-size: 10px !important;
     letter-spacing: .08em !important;
 }
-
 #view-dashboard table td { border-color: rgba(255,255,255,.055) !important; }
 #view-dashboard tbody tr:hover { background: rgba(88,101,242,.055) !important; }
-
 html[data-theme="light"] #view-dashboard .dashboard-header,
 html[data-theme="light"] #view-dashboard .dashboard-brand-copy { background: transparent !important; }
-
 html[data-theme="light"] #view-dashboard .dashboard-stat-card,
 html[data-theme="light"] #view-dashboard .card,
 html[data-theme="light"] #view-dashboard .panel,
@@ -211,22 +187,116 @@ html[data-theme="light"] #view-dashboard .dashboard-card {
     -webkit-backdrop-filter: none !important;
 }
 
+/* ============================================================
+   SIDEBAR — match the supplied compact management-panel reference
+   without disabling any existing navigation targets.
+============================================================ */
+.sidebar {
+    width: 250px !important;
+    flex: 0 0 250px !important;
+    background: #101117 !important;
+    border-right: 1px solid rgba(255,255,255,.085) !important;
+    box-shadow: none !important;
+}
+.sidebar-header {
+    min-height: 72px !important;
+    padding: 16px 18px !important;
+    border-bottom: 1px solid rgba(255,255,255,.065) !important;
+}
+.nav-links {
+    padding: 14px 16px !important;
+    gap: 4px !important;
+    overflow-y: auto !important;
+}
+.nav-section-label,
+.nav-subsection-label {
+    color: #777f9b !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: .11em !important;
+    text-transform: uppercase !important;
+    padding: 12px 8px 7px !important;
+}
+.nav-item,
+.nav-dropdown-toggle {
+    min-height: 36px !important;
+    padding: 8px 9px !important;
+    border-radius: 8px !important;
+    gap: 11px !important;
+    color: #aeb5cc !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    transition: background .16s ease, color .16s ease, box-shadow .16s ease !important;
+}
+.nav-item:hover,
+.nav-dropdown-toggle:hover {
+    color: #f4f6ff !important;
+    background: rgba(255,255,255,.035) !important;
+}
+.nav-item.active {
+    color: #fff !important;
+    background: rgba(88,101,242,.115) !important;
+    box-shadow: inset 0 0 0 1px rgba(88,101,242,.30) !important;
+}
+.nav-item.active::after,
+.nav-item:hover::after { opacity: 0 !important; }
+.nav-item svg,
+.nav-dropdown-toggle svg { color: #8fa0c7 !important; }
+.nav-item.active svg { color: #aeb7ff !important; }
+.nav-dropdown { margin-top: 1px !important; }
+.nav-dropdown-menu-inner {
+    margin-left: 7px !important;
+    padding-left: 9px !important;
+    border-left: 1px solid rgba(255,255,255,.075) !important;
+}
+.nav-dropdown-toggle {
+    width: 100% !important;
+    border: 0 !important;
+    background: transparent !important;
+    cursor: pointer !important;
+}
+.nav-dropdown-title {
+    flex: 1 !important;
+    text-align: left !important;
+}
+.nav-dropdown-chevron { opacity: .7 !important; }
+.nav-subsection-label { padding-left: 9px !important; padding-top: 9px !important; }
+.sidebar-bottom { border-top: 1px solid rgba(255,255,255,.065) !important; }
+
+/* Existing Management tools stay functional; only their visual order is tightened. */
+#nav-management-menu .nav-dropdown-menu-inner {
+    display: flex !important;
+    flex-direction: column !important;
+}
+#nav-management-menu [data-target="view-staff"] { order: 10; }
+#nav-management-menu [data-performance-only] { order: 20; }
+#nav-management-menu [data-target="view-access-logs"] { order: 30; }
+#nav-management-menu [data-target="view-import"] { order: 40; }
+#nav-management-menu [data-target="view-backup"] { order: 50; }
+#nav-management-menu [data-target="view-settings"] { order: 60; }
+#nav-management-menu [data-target="view-settings"] .nav-label { font-size: 0 !important; }
+#nav-management-menu [data-target="view-settings"] .nav-label::after {
+    content: "Panel Settings";
+    font-size: 13px;
+}
+
+/* Keep owner-only items hidden until the existing permission logic reveals them. */
+[data-owner-only][hidden] { display: none !important; }
+
 @media (max-width: 1100px) {
     #view-dashboard .dashboard-stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
 }
-
 @media (max-width: 900px) {
     #view-dashboard.active { min-height: 650px; }
     #view-dashboard .dashboard-header { margin-bottom: 18px !important; }
+    .sidebar { width: 250px !important; flex-basis: 250px !important; }
 }
-
 @media (max-width: 620px) {
     #view-dashboard.active { min-height: 760px; padding-bottom: 18px; border-radius: 12px; }
     #view-dashboard .dashboard-header { align-items: stretch !important; flex-direction: column !important; }
     #view-dashboard .dashboard-header > .btn { width: 100% !important; min-height: 44px !important; }
     #view-dashboard .dashboard-stats-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
 }
-
 @media (prefers-reduced-motion: reduce) {
     #view-dashboard .dashboard-header,
     #view-dashboard .dashboard-brand-copy,
