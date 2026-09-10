@@ -116,6 +116,7 @@ async function storeImportedTranscript({ source, summary, attachmentMessage, own
   }
 
   const deterministicId = `import-${crypto.createHash('sha256').update(`${config.guildId}:${summary.id}`).digest('hex').slice(0, 48)}`;
+  const transcriptId = `${deterministicId}-transcript`;
   const ticketNumber = ticketName.match(/-(\d{4,})$/)?.[1] || null;
   const details = JSON.stringify({
     importSource: 'discord_transcript',
@@ -149,12 +150,12 @@ async function storeImportedTranscript({ source, summary, attachmentMessage, own
   if (ownerId) await upsertUser(ownerId, cleanText(fieldMap(summary)['ticket owner']) || 'Unknown User');
 
   if (htmlContent) {
+    await pool.query('DELETE FROM ticket_transcripts WHERE ticket_id=$1', [deterministicId]);
     await pool.query(
-      `DELETE FROM ticket_transcripts WHERE ticket_id=$1;
-       INSERT INTO ticket_transcripts
-         (id,ticket_id,html_content,discord_url,log_channel_id,log_message_id)
-       VALUES ($1 || '-transcript',$1,$2,$3,$4,$5)`,
-      [deterministicId, htmlContent, transcriptUrl, String(config.importSources.transcriptChannelId), summary.id]
+      `INSERT INTO ticket_transcripts
+        (id,ticket_id,html_content,discord_url,log_channel_id,log_message_id)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [transcriptId, deterministicId, htmlContent, transcriptUrl, String(config.importSources.transcriptChannelId), summary.id]
     );
   }
 
@@ -177,7 +178,7 @@ async function runImport(job, sourceKey) {
 
   setJob(job.id, { status: 'running', stage: 'Fetching Discord messages', progress: 5, message: `Reading transcript channel ${channelId}...` });
   const messages = await fetchChannelMessages(channelId, Number(config.maxTranscriptMessagesPerChannel || 1000));
-  messages.sort((a, b) => Number(a.id) - Number(b.id));
+  messages.sort((a, b) => String(a.id).localeCompare(String(b.id)));
 
   const candidates = messages.filter((message) => {
     if (!message?.embeds?.length) return false;
@@ -196,14 +197,7 @@ async function runImport(job, sourceKey) {
     const ownerId = parseOwnerId(fields['ticket owner']);
     const attachmentMessage = findAttachmentMessage(messages, messages.indexOf(summary));
     try {
-      const result = await storeImportedTranscript({
-        source,
-        summary,
-        attachmentMessage,
-        ownerId,
-        ticketName,
-        panelName: cleanText(fields['panel name']),
-      });
+      const result = await storeImportedTranscript({ source, summary, attachmentMessage, ownerId, ticketName, panelName: cleanText(fields['panel name']) });
       imported += 1;
       if (result.htmlImported) htmlCount += 1;
     } catch (error) {
