@@ -17,6 +17,40 @@ function sendInternalError(req, res, error) {
   return res.status(500).json({ error: 'Internal server error.', requestId: req.requestId });
 }
 
+function isPlaceholderName(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return !normalized || ['unknown user', 'archived user', 'discord user'].includes(normalized);
+}
+
+function parseTicketDetails(details) {
+  if (!details) return null;
+  try {
+    if (typeof details === 'object') return details;
+    const parsed = JSON.parse(String(details));
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function hydrateIdentityFallbacks(rows) {
+  return rows.map((ticket) => {
+    const details = parseTicketDetails(ticket.details);
+    const ownerFallback = String(details?.ticketOwnerName || details?.ownerName || '').trim();
+    const closerFallback = String(details?.closedByName || details?.closed_by_name || '').trim();
+
+    return {
+      ...ticket,
+      user_username: isPlaceholderName(ticket.user_username) && ownerFallback && !isPlaceholderName(ownerFallback)
+        ? ownerFallback
+        : ticket.user_username,
+      closed_by_username: isPlaceholderName(ticket.closed_by_username) && closerFallback && !isPlaceholderName(closerFallback)
+        ? closerFallback
+        : ticket.closed_by_username,
+    };
+  });
+}
+
 exports.getTickets = async (req, res) => {
   try {
     const status = ['open', 'closed'].includes(String(req.query.status || '')) ? String(req.query.status) : null;
@@ -77,7 +111,7 @@ exports.getTickets = async (req, res) => {
 
     try {
       const result = await pool.query(query, values);
-      return res.json(result.rows);
+      return res.json(hydrateIdentityFallbacks(result.rows));
     } catch (primaryError) {
       console.warn('[API SIMPLE TICKETS JOIN FALLBACK]', primaryError.message);
 
@@ -123,7 +157,7 @@ exports.getTickets = async (req, res) => {
       fallbackQuery += ' ORDER BY COALESCE(t.updated_at, t.last_activity_at, t.closed_at, t.created_at) DESC';
 
       const result = await pool.query(fallbackQuery, fallbackValues);
-      return res.json(result.rows.map((ticket) => ({
+      return res.json(hydrateIdentityFallbacks(result.rows.map((ticket) => ({
         ...ticket,
         user_username: null,
         user_avatar: null,
@@ -133,7 +167,7 @@ exports.getTickets = async (req, res) => {
         claimed_by_avatar: null,
         closed_by_username: null,
         closed_by_avatar: null,
-      })));
+      }))));
     }
   } catch (error) {
     return sendInternalError(req, res, error);
