@@ -14,36 +14,39 @@
     document.querySelectorAll('.brand').forEach((brand) => {
       Object.assign(brand.style, {
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: '0',
-        marginBottom: '16px',
-        textAlign: 'center',
+        justifyContent: 'flex-start',
+        gap: '16px',
+        marginBottom: '24px',
+        textAlign: 'left',
       });
     });
 
     document.querySelectorAll('.brand img').forEach((img) => {
       img.src = '/assets/gta-pinas-logo.svg';
-      img.alt = 'GTA Pinas Revamped';
+      img.alt = 'GTA Pinas Roleplay';
       img.removeAttribute('srcset');
       Object.assign(img.style, {
-        width: '300px',
-        maxWidth: '100%',
-        height: 'auto',
-        aspectRatio: '128 / 102',
+        width: '54px',
+        height: '54px',
+        maxWidth: '54px',
         objectFit: 'contain',
-        flex: '0 0 auto',
-        margin: '0 auto',
-        mixBlendMode: 'normal',
+        flex: '0 0 54px',
+        margin: '0',
+        mixBlendMode: 'screen',
         background: 'transparent',
-        filter: 'drop-shadow(0 12px 24px rgba(0, 0, 0, 0.28))',
+        filter: 'drop-shadow(0 8px 15px rgba(22, 119, 255, 0.24))',
         animation: 'none',
       });
     });
 
-    document.querySelectorAll('.brand small, .brand h1').forEach((element) => {
-      element.style.display = 'none';
+    document.querySelectorAll('.brand small').forEach((element) => {
+      element.style.display = 'block';
+    });
+
+    document.querySelectorAll('.brand h1').forEach((element) => {
+      element.style.display = 'block';
     });
 
     document.querySelectorAll('.access-note').forEach((element) => {
