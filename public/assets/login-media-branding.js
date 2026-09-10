@@ -24,20 +24,20 @@
     });
 
     document.querySelectorAll('.brand img').forEach((img) => {
-      img.src = '/assets/gta-pinas-logo.svg';
+      img.src = '/assets/gta-pinas-logo.svg?v=20260911-logo2';
       img.alt = 'GTA Pinas Revamped';
       img.removeAttribute('srcset');
       Object.assign(img.style, {
-        width: '300px',
-        maxWidth: '100%',
+        width: '220px',
+        maxWidth: '78%',
         height: 'auto',
         aspectRatio: '128 / 102',
         objectFit: 'contain',
         flex: '0 0 auto',
         margin: '0 auto',
-        mixBlendMode: 'normal',
+        mixBlendMode: 'screen',
         background: 'transparent',
-        filter: 'drop-shadow(0 12px 24px rgba(0, 0, 0, 0.28))',
+        filter: 'drop-shadow(0 10px 20px rgba(0, 0, 0, 0.24))',
         animation: 'none',
       });
     });
@@ -162,9 +162,7 @@
     }
 
     const watermark = document.querySelector('.ost-watermark');
-    if (watermark) {
-      watermark.textContent = 'GTA Pinas OST';
-    }
+    if (watermark) watermark.textContent = 'GTA Pinas OST';
   }
 
   function loadMedia() {
