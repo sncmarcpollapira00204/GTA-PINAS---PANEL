@@ -21,7 +21,7 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-embed4`;
+const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-embed5`; 
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 let httpServer = null;
 let cleanupTimer = null;
@@ -54,12 +54,11 @@ async function loadPageTemplates() {
   ];
   const scriptTags = [
     `<script defer src="/assets/admin-name-rotator.js?v=${PANEL_ASSET_VERSION}"></script>`,
-    `<script defer src="/assets/ticket-ui-cleanup.js?v=20260910-3"></script>`,
+    `<script defer src="/assets/ticket-ui-cleanup.js?v=${PANEL_ASSET_VERSION}"></script>`,
     '<script defer src="/assets/simple-panel-ui.js?v=20260806-1"></script>',
     `<script defer src="/assets/transcript-collapse-fix.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/transcript-meta-footer.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/open-ticket-discord.js?v=${PANEL_ASSET_VERSION}"></script>`,
-    `<script defer src="/assets/staff-performance-clarity.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/media-branding.js?v=${PANEL_ASSET_VERSION}"></script>`,
     '<script defer src="/assets/manage-staff.js?v=20260816-3"></script>',
     `<script defer src="/assets/donation-embed-editor.js?v=${PANEL_ASSET_VERSION}"></script>`,
