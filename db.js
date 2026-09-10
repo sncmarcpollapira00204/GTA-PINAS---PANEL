@@ -48,7 +48,21 @@ const RETRYABLE_CODES = new Set([
 ]);
 
 function shouldRetry(error) {
-  return RETRYABLE_CODES.has(error?.code);
+  const code = String(error?.code || '');
+  const systemCode = String(error?.cause?.code || '');
+  const message = String(error?.message || '').toLowerCase();
+
+  if (RETRYABLE_CODES.has(code) || RETRYABLE_CODES.has(systemCode)) return true;
+  return [
+    'econnrefused',
+    'etimedout',
+    'econnreset',
+    'enetunreach',
+    'ehostunreach',
+    'connection terminated due to connection timeout',
+    'database system is starting up',
+    'database system is not yet accepting connections',
+  ].some((marker) => message.includes(marker));
 }
 
 function sleep(milliseconds) {
@@ -85,7 +99,7 @@ async function applyMigration(client, migration) {
   return true;
 }
 
-async function initSchema(maxAttempts = 5) {
+async function initSchema(maxAttempts = 15) {
   let lastError;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -148,7 +162,8 @@ async function initSchema(maxAttempts = 5) {
       );
 
       if (!shouldRetry(error) || attempt >= maxAttempts) break;
-      await sleep(1000 * (2 ** (attempt - 1)));
+      const backoff = Math.min(5000, 750 * (2 ** Math.min(attempt - 1, 3)));
+      await sleep(backoff);
     } finally {
       if (client) client.release();
     }
