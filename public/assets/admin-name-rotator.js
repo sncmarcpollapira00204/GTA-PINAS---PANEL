@@ -5,8 +5,8 @@
     const DASHBOARD_TITLE_SELECTOR = '#view-dashboard .dashboard-brand-copy h1';
     const DASHBOARD_CREDIT_SELECTOR = '.dashboard-brand-copy p';
     const BRAND_TITLE_SELECTOR = '.brand-copy h2, .brand-copy strong, .sidebar-header h2, .sidebar-header strong';
-    const BRAND_TITLE = '5th Avenue Roleplay';
-    const DEVELOPER_CREDIT = 'Developed and Maintained by curtcreation.dev';
+    const BRAND_TITLE = 'GTA Pinas Roleplay';
+    const DEVELOPER_CREDIT = 'Developed and Maintained by Cipher & Aezakmi';
     const CHANGE_INTERVAL_MS = 3200;
     const FADE_DURATION_MS = 180;
 
@@ -237,7 +237,7 @@
 
     function showNextAdmin() {
         if (!admins.length) {
-            setRotatingText('5th Avenue Admin Team');
+            setRotatingText('GTA Pinas Admin Team');
             return;
         }
 
