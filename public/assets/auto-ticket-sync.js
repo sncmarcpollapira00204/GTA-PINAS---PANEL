@@ -5,88 +5,84 @@
   const nativeFetch = window.fetch.bind(window);
   let timer = null;
   let running = false;
-  let lastVersion = null;
 
-  // The legacy panel asks for ticket data through /api/tickets and also calls a
-  // removed whitelist endpoint. Normalize those requests before any DOM-ready
-  // sync starts so the dashboard, ticket lists, and transcript viewer share one
-  // reliable data path.
-  window.fetch = async (input, init = {}) => {
-    const url = typeof input === 'string' ? input : input?.url || '';
-    const method = String(init?.method || (typeof input !== 'string' ? input?.method : 'GET') || 'GET').toUpperCase();
-    let path = url;
-    let query = '';
-    try {
-      const parsed = new URL(url, window.location.origin);
-      path = parsed.pathname;
-      query = parsed.search;
-    } catch (_) {}
-
-    if (method === 'GET' && path === '/api/tickets') {
-      return nativeFetch(`/api/tickets/simple${query}`, init);
-    }
-
-    if (method === 'GET' && path === '/api/whitelist/stats') {
-      return new Response(JSON.stringify({ pending: 0, whitelisted: 0 }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    return nativeFetch(input, init);
-  };
-
-  function getJson(url) {
-    return window.fetch(url, {
+  async function getJson(url) {
+    const response = await nativeFetch(url, {
       method: 'GET',
       cache: 'no-store',
       credentials: 'same-origin',
       headers: { Accept: 'application/json' },
-    }).then(async (response) => {
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || `Backend request failed (${response.status}).`);
-      }
-      return response.json();
     });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Backend request failed (${response.status}).`);
+    return payload;
   }
 
-  async function sync() {
+  function suppressLegacyBackendToast() {
+    const toast = window.showToast;
+    if (typeof toast !== 'function' || toast.__gtaCompatWrapped) return;
+    const wrapped = (message, type) => {
+      const text = String(message || '');
+      if (/Failed to connect to the backend API\.?/i.test(text)) {
+        console.warn('[PANEL SYNC] Suppressed legacy aggregate API toast.');
+        return;
+      }
+      return toast(message, type);
+    };
+    wrapped.__gtaCompatWrapped = true;
+    window.showToast = wrapped;
+  }
+
+  async function hardSync() {
     if (running || document.hidden) return;
     running = true;
 
     try {
-      const dashboard = await getJson('/api/dashboard');
-      const version = dashboard?.ticketsVersion || `${dashboard?.openTickets || 0}:${dashboard?.closedTickets || 0}`;
+      suppressLegacyBackendToast();
 
-      if (version !== lastVersion) {
-        lastVersion = version;
-        window.dispatchEvent(new CustomEvent('gta-pinas-ticket-sync', { detail: dashboard }));
+      const [dashboard, tickets] = await Promise.all([
+        getJson('/api/dashboard'),
+        getJson('/api/tickets/simple'),
+      ]);
 
-        if (typeof window.syncData === 'function') {
-          await Promise.resolve(window.syncData(false));
-        }
+      const normalizedTickets = Array.isArray(tickets) ? tickets : [];
 
-        if (typeof window.renderTranscriptList === 'function') {
-          await Promise.resolve(window.renderTranscriptList());
-        }
-      }
+      // Use the existing panel's own lexical variables/functions without editing
+      // the very large inline index script. Global eval runs in the same page realm.
+      const serialized = JSON.stringify(normalizedTickets).replace(/</g, '\\u003c');
+      const dashboardJson = JSON.stringify(dashboard || {}).replace(/</g, '\\u003c');
+      const bridge = `(() => {
+        const dash = ${dashboardJson};
+        const nextTickets = ${serialized};
+        try { document.getElementById('stat-open')?.textContent = String(dash.openTickets ?? 0); } catch (_) {}
+        try { document.getElementById('nav-open-count')?.textContent = String(dash.openTickets ?? 0); } catch (_) {}
+        try { document.getElementById('stat-closed')?.textContent = String(dash.closedTickets ?? 0); } catch (_) {}
+        try {
+          allTickets = nextTickets;
+          if (typeof renderTickets === 'function') renderTickets({ renderTranscripts: true });
+          if (typeof renderTranscriptList === 'function' && document.getElementById('view-transcripts')?.classList.contains('active')) renderTranscriptList();
+        } catch (error) { console.warn('[PANEL SYNC] ticket render bridge failed:', error); }
+      })()`;
+      window.eval(bridge);
+
+      window.dispatchEvent(new CustomEvent('gta-pinas-ticket-sync', { detail: { dashboard, tickets: normalizedTickets } }));
     } catch (error) {
-      console.warn('[AUTO TICKET SYNC]', error.message);
+      console.warn('[PANEL SYNC]', error.message);
     } finally {
       running = false;
     }
   }
 
   function start() {
+    suppressLegacyBackendToast();
+    hardSync();
     if (timer) clearInterval(timer);
-    sync();
-    timer = window.setInterval(sync, SYNC_INTERVAL_MS);
+    timer = window.setInterval(hardSync, SYNC_INTERVAL_MS);
   }
 
-  window.addEventListener('focus', sync);
+  window.addEventListener('focus', hardSync);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) sync();
+    if (!document.hidden) hardSync();
   });
 
   if (document.readyState === 'loading') {
