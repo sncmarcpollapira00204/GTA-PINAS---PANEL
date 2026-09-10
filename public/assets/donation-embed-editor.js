@@ -22,33 +22,33 @@
         const style = document.createElement('style');
         style.id = 'donation-embed-editor-styles';
         style.textContent = `
-            #view-donation-embed-editor .dee-shell{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:16px;max-width:1200px}
-            #view-donation-embed-editor .dee-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:16px}
-            #view-donation-embed-editor .dee-heading{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)}
-            #view-donation-embed-editor .dee-icon{width:32px;height:32px;display:grid;place-items:center;border-radius:7px;background:var(--bg-main);border:1px solid var(--border);color:var(--text-main);flex:none}
-            #view-donation-embed-editor .dee-heading h2{font-size:13px;margin:0;font-weight:700}
-            #view-donation-embed-editor .dee-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 13px}
-            #view-donation-embed-editor .dee-field{display:flex;flex-direction:column;gap:4px}
+            #view-donation-embed-editor .dee-shell{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:20px;max-width:1200px}
+            #view-donation-embed-editor .dee-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:20px}
+            #view-donation-embed-editor .dee-heading{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+            #view-donation-embed-editor .dee-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:7px;background:var(--bg-main);border:1px solid var(--border);color:var(--text-main);flex:none}
+            #view-donation-embed-editor .dee-heading h2{font-size:14px;margin:0;font-weight:700}
+            #view-donation-embed-editor .dee-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+            #view-donation-embed-editor .dee-field{display:flex;flex-direction:column;gap:6px}
             #view-donation-embed-editor .dee-field.full{grid-column:1/-1}
-            #view-donation-embed-editor .dee-field label{font-size:9px;font-weight:700;color:var(--text-main);letter-spacing:0;text-transform:none}
-            #view-donation-embed-editor .dee-field input,#view-donation-embed-editor .dee-field textarea,#view-donation-embed-editor .dee-field select{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;background:var(--bg-main);color:var(--text-main);outline:none;padding:8px 10px;font:inherit;font-size:11px;transition:border-color .15s,box-shadow .15s}
-            #view-donation-embed-editor .dee-field textarea{min-height:105px;resize:vertical;line-height:1.45}
+            #view-donation-embed-editor .dee-field label{font-size:10px;font-weight:700;color:var(--text-main);letter-spacing:0;text-transform:none}
+            #view-donation-embed-editor .dee-field input,#view-donation-embed-editor .dee-field textarea,#view-donation-embed-editor .dee-field select{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;background:var(--bg-main);color:var(--text-main);outline:none;padding:10px 11px;font:inherit;font-size:11px;transition:border-color .15s,box-shadow .15s}
+            #view-donation-embed-editor .dee-field textarea{min-height:155px;resize:vertical;line-height:1.55}
             #view-donation-embed-editor .dee-field input:focus,#view-donation-embed-editor .dee-field textarea:focus,#view-donation-embed-editor .dee-field select:focus{border-color:var(--primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--primary) 10%,transparent)}
-            #view-donation-embed-editor .dee-actions{display:flex;gap:8px;margin-top:12px}.dee-actions .btn{flex:1;min-height:38px}
+            #view-donation-embed-editor .dee-actions{display:flex;gap:8px;margin-top:10px}.dee-actions .btn{flex:1;min-height:36px}
             #view-donation-embed-editor .dee-preview-wrap{position:sticky;top:16px;height:max-content}
-            #view-donation-embed-editor .dee-preview-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.dee-preview-label strong{font-size:11px}
+            #view-donation-embed-editor .dee-preview-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.dee-preview-label strong{font-size:12px}
             #view-donation-embed-editor .dee-preview-label span{font-size:9px;color:var(--text-sec)}
-            #view-donation-embed-editor .dee-discord{background:#313338;border-radius:6px;padding:14px;min-height:250px}
-            #view-donation-embed-editor .dee-discord-user{display:flex;align-items:center;gap:8px;margin-bottom:10px}.dee-discord-avatar{width:30px;height:30px;border-radius:50%;background:#5865f2;display:grid;place-items:center;font-size:9px;font-weight:800}.dee-discord-user strong{font-size:10px}.dee-discord-user span{display:block;color:#949ba4;font-size:8px;margin-top:2px}
-            #view-donation-embed-editor .dee-embed{position:relative;width:100%;max-width:540px;box-sizing:border-box;background:#2b2d31;border-left:4px solid #5865f2;border-radius:3px;padding:10px 12px;color:#dbdee1;overflow:hidden}
-            #view-donation-embed-editor .dee-embed-main{padding-right:0}.dee-embed.has-thumbnail .dee-embed-main{padding-right:78px}
-            #view-donation-embed-editor .dee-embed-author{font-size:9px;font-weight:700;margin-bottom:5px}.dee-embed-title{font-size:13px;font-weight:700;margin-bottom:5px}.dee-embed-description{font-size:10px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
-            #view-donation-embed-editor .dee-embed-thumbnail{position:absolute;top:10px;right:12px;width:62px;height:62px;border-radius:4px;object-fit:cover}.dee-embed-image{display:block;width:100%;max-height:180px;border-radius:4px;margin-top:8px;object-fit:contain}
-            #view-donation-embed-editor .dee-embed-footer{color:#949ba4;font-size:8px;margin-top:8px;padding-top:2px}
-            #view-donation-embed-editor .dee-send-box{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}.dee-send-box label{display:block;font-size:9px;font-weight:700;color:var(--text-main);margin-bottom:4px}.dee-status{margin-top:8px;font-size:10px;color:var(--text-sec);min-height:14px}.dee-status.error{color:var(--danger)}.dee-status.success{color:var(--success)}
+            #view-donation-embed-editor .dee-discord{background:#313338;border-radius:6px;padding:18px;min-height:320px}
+            #view-donation-embed-editor .dee-discord-user{display:flex;align-items:center;gap:9px;margin-bottom:14px}.dee-discord-avatar{width:32px;height:32px;border-radius:50%;background:#5865f2;display:grid;place-items:center;font-size:10px;font-weight:800}.dee-discord-user strong{font-size:11px}.dee-discord-user span{display:block;color:#949ba4;font-size:9px;margin-top:2px}
+            #view-donation-embed-editor .dee-embed{position:relative;width:100%;max-width:540px;box-sizing:border-box;background:#2b2d31;border-left:4px solid #5865f2;border-radius:3px;padding:12px 14px;color:#dbdee1;overflow:hidden}
+            #view-donation-embed-editor .dee-embed-main{padding-right:0}.dee-embed.has-thumbnail .dee-embed-main{padding-right:92px}
+            #view-donation-embed-editor .dee-embed-author{font-size:10px;font-weight:700;margin-bottom:7px}.dee-embed-title{font-size:14px;font-weight:700;margin-bottom:6px}.dee-embed-description{font-size:11px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+            #view-donation-embed-editor .dee-embed-thumbnail{position:absolute;top:12px;right:14px;width:72px;height:72px;border-radius:4px;object-fit:cover}.dee-embed-image{display:block;width:100%;max-height:260px;border-radius:4px;margin-top:10px;object-fit:contain}
+            #view-donation-embed-editor .dee-embed-footer{color:#949ba4;font-size:9px;margin-top:10px;padding-top:2px}
+            #view-donation-embed-editor .dee-send-box{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}.dee-send-box label{display:block;font-size:10px;font-weight:700;color:var(--text-main);margin-bottom:6px}.dee-status{margin-top:10px;font-size:10px;color:var(--text-sec);min-height:16px}.dee-status.error{color:var(--danger)}.dee-status.success{color:var(--success)}
             #view-donation-embed-editor #dee-send-button{min-height:36px;margin-top:8px!important}
             @media(max-width:900px){#view-donation-embed-editor .dee-shell{grid-template-columns:1fr}.dee-preview-wrap{position:static}}
-            @media(max-width:620px){#view-donation-embed-editor .dee-grid{grid-template-columns:1fr}.dee-field.full{grid-column:auto}.dee-card{padding:13px!important}.dee-actions{flex-direction:column}}
+            @media(max-width:620px){#view-donation-embed-editor .dee-grid{grid-template-columns:1fr}.dee-field.full{grid-column:auto}.dee-card{padding:15px!important}.dee-actions{flex-direction:column}}
         `;
         document.head.appendChild(style);
     }
@@ -83,7 +83,7 @@
                         <div class="dee-field"><label for="dee-footer">Footer</label><input id="dee-footer" maxlength="2048" placeholder="GTA Pinas Treasury"></div>
                     </div>
                     <div class="dee-actions"><button class="btn btn-outline" type="button" onclick="window.donationEmbedEditor.reset()"><i data-lucide="rotate-ccw" size="15"></i> Reset</button><button class="btn btn-primary" type="button" onclick="window.donationEmbedEditor.preview()"><i data-lucide="eye" size="15"></i> Preview</button></div>
-                    <div class="dee-send-box"><label for="dee-channel">Donation channel</label><select id="dee-channel"><option value="">Loading channels...</option></select><button id="dee-send-button" class="btn btn-success" style="width:100%" type="button" onclick="window.donationEmbedEditor.send()"><i data-lucide="send" size="15"></i> Send to Discord</button><div id="dee-status" class="dee-status"></div></div>
+                    <div class="dee-send-box"><label for="dee-channel">Donation channel</label><select id="dee-channel"><option value="">Loading channels...</option></select><button id="dee-send-button" class="btn btn-success" style="width:100%;margin-top:11px" type="button" onclick="window.donationEmbedEditor.send()"><i data-lucide="send" size="15"></i> Send to Discord</button><div id="dee-status" class="dee-status"></div></div>
                 </section>
                 <section class="dee-card dee-preview-wrap"><div class="dee-preview-label"><strong>Discord preview</strong><span>Live preview</span></div><div id="dee-preview" class="dee-discord"></div></section>
             </div>`;
