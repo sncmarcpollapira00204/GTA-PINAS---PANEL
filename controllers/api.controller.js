@@ -16,10 +16,13 @@ let ticketsCache = { expiresAt: 0, rows: null };
 let dashboardPromise = null;
 let ticketsPromise = null;
 
+function sendInternalError(req, res) {
+  return res.status(500).json({ error: 'Internal server error.', requestId: req.requestId });
+}
+
 function sanitizeTranscriptHtml(input) {
   let html = String(input || '');
-
-  html = html
+  return html
     .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
     .replace(/<(?:iframe|object|embed|form)\b[^>]*>[\s\S]*?<\/(?:iframe|object|embed|form)\s*>/gi, '')
     .replace(/<(?:iframe|object|embed|form)\b[^>]*\/?>/gi, '')
@@ -28,44 +31,51 @@ function sanitizeTranscriptHtml(input) {
     .replace(/\s+on[a-z0-9_-]+\s*=\s*(["'])[\s\S]*?\1/gi, '')
     .replace(/\s+on[a-z0-9_-]+\s*=\s*[^\s>]+/gi, '')
     .replace(/(href|src|xlink:href)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi, '$1="#"');
-
-  return html;
 }
 
-function sendInternalError(req, res) {
-  return res.status(500).json({ error: 'Internal server error.', requestId: req.requestId });
+function buildDashboardPayload(stats) {
+  return {
+    openTickets: Number(stats.open_tickets || 0),
+    closedTickets: Number(stats.closed_tickets || 0),
+    totalTickets: Number(stats.total_tickets || 0),
+    ticketsVersion: stats.tickets_version || null,
+    staffOnline: Number(stats.staff_registered || 0),
+  };
+}
+
+async function queryDashboard() {
+  try {
+    const result = await pool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'open')::INTEGER AS open_tickets,
+        COUNT(*) FILTER (WHERE status = 'closed' AND transcript_channel_id = ANY($1::text[]))::INTEGER AS closed_tickets,
+        COUNT(*) FILTER (WHERE status IN ('open','closed') AND (status = 'open' OR transcript_channel_id = ANY($1::text[])))::INTEGER AS total_tickets,
+        MAX(COALESCE(updated_at, last_activity_at, closed_at, created_at)) AS tickets_version,
+        $2::INTEGER AS staff_registered
+      FROM tickets
+    `, [currentTranscriptIds, configuredStaffCount]);
+    return buildDashboardPayload(result.rows[0] || {});
+  } catch (primaryError) {
+    console.error('[API DASHBOARD PRIMARY QUERY ERROR]', primaryError);
+    const result = await pool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'open')::INTEGER AS open_tickets,
+        COUNT(*) FILTER (WHERE status = 'closed')::INTEGER AS closed_tickets,
+        COUNT(*)::INTEGER AS total_tickets,
+        MAX(COALESCE(updated_at, last_activity_at, closed_at, created_at)) AS tickets_version,
+        $1::INTEGER AS staff_registered
+      FROM tickets
+    `, [configuredStaffCount]);
+    return buildDashboardPayload(result.rows[0] || {});
+  }
 }
 
 exports.getDashboardStats = async (req, res) => {
   try {
     if (dashboardCache.payload && dashboardCache.expiresAt > Date.now()) return res.json(dashboardCache.payload);
+    if (!dashboardPromise) dashboardPromise = queryDashboard().finally(() => { dashboardPromise = null; });
 
-    if (!dashboardPromise) {
-      dashboardPromise = pool.query(`
-        SELECT
-          COUNT(*) FILTER (WHERE status = 'open')::INTEGER AS open_tickets,
-          COUNT(*) FILTER (WHERE status = 'closed')::INTEGER AS closed_tickets,
-          COUNT(*)::INTEGER AS total_tickets,
-          MAX(COALESCE(updated_at, last_activity_at, closed_at, created_at)) AS tickets_version,
-          $1::INTEGER AS staff_registered
-        FROM tickets
-        WHERE (
-          (status = 'open' AND COALESCE(import_source, 'live') IN ('live', 'discord_open_import'))
-          OR (status = 'closed' AND transcript_channel_id = ANY($2::text[]))
-        )
-      `, [configuredStaffCount, currentTranscriptIds]).finally(() => { dashboardPromise = null; });
-    }
-
-    const result = await dashboardPromise;
-    const stats = result.rows[0] || {};
-    const payload = {
-      openTickets: Number(stats.open_tickets || 0),
-      closedTickets: Number(stats.closed_tickets || 0),
-      totalTickets: Number(stats.total_tickets || 0),
-      ticketsVersion: stats.tickets_version || null,
-      staffOnline: Number(stats.staff_registered || 0),
-    };
-
+    const payload = await dashboardPromise;
     if (dashboardCache.payload?.ticketsVersion !== payload.ticketsVersion) ticketsCache = { expiresAt: 0, rows: null };
     dashboardCache = { expiresAt: Date.now() + DASHBOARD_CACHE_MS, payload };
     return res.json(payload);
@@ -75,53 +85,73 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
+async function queryTickets(normalizedStatus) {
+  const values = [currentTranscriptIds];
+  let query = `
+    SELECT
+      t.*,
+      u.username AS user_username,
+      u.avatar AS user_avatar,
+      assigned.username AS staff_username,
+      assigned.avatar AS staff_avatar,
+      claimed.username AS claimed_by_username,
+      claimed.avatar AS claimed_by_avatar,
+      closed.username AS closed_by_username,
+      closed.avatar AS closed_by_avatar
+    FROM tickets t
+    LEFT JOIN users u ON t.user_id = u.id
+    LEFT JOIN staff assigned ON t.assigned_to = assigned.id
+    LEFT JOIN staff claimed ON t.claimed_by = claimed.id
+    LEFT JOIN staff closed ON t.closed_by = closed.id
+    WHERE (
+      t.status = 'open'
+      OR (t.status = 'closed' AND t.transcript_channel_id = ANY($1::text[]))
+    )
+  `;
+  if (normalizedStatus) {
+    values.push(normalizedStatus);
+    query += ' AND t.status = $2';
+  }
+  query += ' ORDER BY t.created_at DESC';
+
+  try {
+    const result = await pool.query(query, values);
+    return result.rows;
+  } catch (primaryError) {
+    console.error('[API TICKETS PRIMARY QUERY ERROR]', primaryError);
+    const fallbackValues = [];
+    let fallbackQuery = `SELECT t.* FROM tickets t WHERE 1=1`;
+    if (normalizedStatus) {
+      fallbackValues.push(normalizedStatus);
+      fallbackQuery += ' AND t.status = $1';
+    }
+    fallbackQuery += ' ORDER BY t.created_at DESC';
+    const result = await pool.query(fallbackQuery, fallbackValues);
+    return result.rows.map((row) => ({
+      ...row,
+      user_username: null,
+      user_avatar: null,
+      staff_username: null,
+      staff_avatar: null,
+      claimed_by_username: null,
+      claimed_by_avatar: null,
+      closed_by_username: null,
+      closed_by_avatar: null,
+    }));
+  }
+}
+
 exports.getTickets = async (req, res) => {
   try {
     const { status } = req.query;
-    const allowedStatuses = new Set(['open', 'closed']);
-    const normalizedStatus = allowedStatuses.has(status) ? status : null;
+    const normalizedStatus = new Set(['open', 'closed']).has(status) ? status : null;
 
     if (!normalizedStatus && ticketsCache.rows && ticketsCache.expiresAt > Date.now()) return res.json(ticketsCache.rows);
+    if (!normalizedStatus && !ticketsPromise) ticketsPromise = queryTickets(null).finally(() => { ticketsPromise = null; });
 
-    const values = [currentTranscriptIds];
-    let query = `
-      SELECT
-        t.*,
-        u.username AS user_username,
-        u.avatar AS user_avatar,
-        assigned.username AS staff_username,
-        assigned.avatar AS staff_avatar,
-        claimed.username AS claimed_by_username,
-        claimed.avatar AS claimed_by_avatar,
-        closed.username AS closed_by_username,
-        closed.avatar AS closed_by_avatar
-      FROM tickets t
-      LEFT JOIN users u ON t.user_id = u.id
-      LEFT JOIN staff assigned ON t.assigned_to = assigned.id
-      LEFT JOIN staff claimed ON t.claimed_by = claimed.id
-      LEFT JOIN staff closed ON t.closed_by = closed.id
-      WHERE (
-        (t.status = 'open' AND COALESCE(t.import_source, 'live') IN ('live', 'discord_open_import'))
-        OR (t.status = 'closed' AND t.transcript_channel_id = ANY($1::text[]))
-      )
-    `;
-
-    if (normalizedStatus) {
-      values.push(normalizedStatus);
-      query += ' AND t.status = $2';
-    }
-    query += ' ORDER BY t.created_at DESC';
-
-    let result;
-    if (!normalizedStatus) {
-      if (!ticketsPromise) ticketsPromise = pool.query(query, values).finally(() => { ticketsPromise = null; });
-      result = await ticketsPromise;
-      ticketsCache = { expiresAt: Date.now() + TICKETS_CACHE_MS, rows: result.rows };
-    } else {
-      result = await pool.query(query, values);
-    }
-
-    return res.json(result.rows);
+    const rows = normalizedStatus ? await queryTickets(normalizedStatus) : await ticketsPromise;
+    if (!normalizedStatus) ticketsCache = { expiresAt: Date.now() + TICKETS_CACHE_MS, rows };
+    return res.json(rows);
   } catch (error) {
     console.error('[API TICKETS ERROR]', error);
     return sendInternalError(req, res);
@@ -175,14 +205,11 @@ exports.getTicketTranscriptHtml = async (req, res) => {
   try {
     const ticketId = String(req.params.id || '').trim();
     if (!ticketId) return res.status(400).send('Ticket ID is required.');
-
     const result = await pool.query(`
       SELECT tr.html_content, t.ticket_number, t.channel_name
       FROM ticket_transcripts tr JOIN tickets t ON t.id = tr.ticket_id
       WHERE tr.ticket_id = $1 ORDER BY tr.generated_at DESC LIMIT 1`, [ticketId]);
-
     if (!result.rows.length || !result.rows[0].html_content) return res.status(404).send('Saved HTML transcript was not found.');
-
     const ticket = result.rows[0];
     const safeName = String(ticket.ticket_number || ticket.channel_name || ticketId).replace(/[^a-zA-Z0-9_-]/g, '-');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
