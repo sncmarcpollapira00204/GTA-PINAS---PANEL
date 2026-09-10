@@ -14,6 +14,7 @@
   let busy = false;
   let observer = null;
   let lastRenderedSignature = '';
+  let csrfToken = null;
 
   const esc = (value) => String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -31,14 +32,35 @@
     if (typeof window.showToast === 'function') window.showToast(message, type);
   }
 
+  async function ensureCsrfToken() {
+    if (csrfToken) return csrfToken;
+    const response = await fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.csrfToken) throw new Error('Security token could not be loaded. Refresh the page and try again.');
+    csrfToken = payload.csrfToken;
+    return csrfToken;
+  }
+
   async function request(url, options = {}) {
+    const method = String(options.method || 'GET').toUpperCase();
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) headers['x-csrf-token'] = await ensureCsrfToken();
+
     const response = await fetch(url, {
       cache: 'no-store',
       credentials: 'same-origin',
       ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      headers,
     });
     const payload = await response.json().catch(() => ({}));
+    if (response.status === 403 && payload.code === 'CSRF_INVALID') {
+      csrfToken = null;
+      headers['x-csrf-token'] = await ensureCsrfToken();
+      const retry = await fetch(url, { cache: 'no-store', credentials: 'same-origin', ...options, headers });
+      const retryPayload = await retry.json().catch(() => ({}));
+      if (!retry.ok) throw new Error(retryPayload.error || `Request failed (${retry.status}).`);
+      return retryPayload;
+    }
     if (!response.ok) throw new Error(payload.error || `Request failed (${response.status}).`);
     return payload;
   }
@@ -83,7 +105,7 @@
         method: 'POST',
         body: '{}',
       });
-      let jobId = payload.job?.id;
+      const jobId = payload.job?.id;
       updateStatus(view, payload.job, payload.message);
 
       while (jobId) {
