@@ -10,6 +10,7 @@ const pool = require('./db');
 const apiRoutes = require('./routes/api.routes');
 const authRoutes = require('./routes/auth.routes');
 const mediaRoutes = require('./routes/media.routes');
+const donationRoutes = require('./routes/donation.routes');
 const authService = require('./services/auth.service');
 const staffProfileService = require('./services/staffProfile.service');
 const mediaSettingsService = require('./services/mediaSettings.service');
@@ -70,6 +71,7 @@ async function loadPageTemplates() {
     `<script defer src="/assets/staff-performance-clarity.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/media-branding.js?v=${PANEL_ASSET_VERSION}"></script>`,
     '<script defer src="/assets/manage-staff.js?v=20260816-3"></script>',
+    `<script defer src="/assets/donation-embed-editor.js?v=${PANEL_ASSET_VERSION}"></script>`,
   ];
 
   pageTemplates = {
@@ -191,6 +193,7 @@ async function readinessResponse(req, res) {
 
 app.get(['/api/health', '/api/health/ready'], readinessResponse);
 app.use('/api', requireApiAuth, requireCsrf, apiRoutes);
+app.use('/api/donation', requireApiAuth, requireCsrf, donationRoutes);
 
 app.get(['/', '/index.html'], requirePageAuth, (req, res, next) => {
   if (!pageTemplates?.index) return next(new Error('Panel template is not ready.'));
@@ -258,5 +261,3 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 if (require.main === module) startServer();
-
-module.exports = { app, startServer, shutdown };
