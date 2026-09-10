@@ -10,6 +10,7 @@ const {
 } = require('../utils/transcriptHtml');
 
 const DISCORD_API = 'https://discord.com/api/v10';
+const PLACEHOLDER_NAMES = /^(?:user|unknown user|archived user|discord user)$/i;
 
 function getDiscordToken() {
   return String(
@@ -45,12 +46,53 @@ async function discordJson(pathname) {
   return response.json().catch(() => null);
 }
 
+function buildDiscordAvatarUrl(user) {
+  if (!user?.id) return null;
+  if (user.avatar) {
+    const extension = String(user.avatar).startsWith('a_') ? 'gif' : 'png';
+    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${extension}?size=128`;
+  }
+
+  try {
+    const index = Number((BigInt(String(user.id)) >> 22n) % 6n);
+    return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
+  } catch (_) {
+    return null;
+  }
+}
+
 async function resolveDiscordProfile(discordId) {
   const id = String(discordId || '').trim();
   if (!/^\d{15,22}$/.test(id)) return null;
 
-  // Prefer the panel's own imported Discord identity. This keeps transcripts
-  // working even when Discord API lookup is unavailable or the bot lacks a guild permission.
+  // Discord is the source of truth for the current username/display name and avatar.
+  // A local database record is only used as a fallback when Discord cannot be queried.
+  const member = config.guildId
+    ? await discordJson(
+        `/guilds/${encodeURIComponent(String(config.guildId))}/members/${encodeURIComponent(id)}`
+      )
+    : null;
+  const user = member?.user || await discordJson(`/users/${encodeURIComponent(id)}`);
+
+  if (user?.id) {
+    const username = String(user.username || '').trim();
+    const displayName = String(
+      member?.nick || user.global_name || username || ''
+    ).trim();
+
+    if (username || displayName) {
+      return {
+        id: String(user.id),
+        username: username || displayName,
+        displayName: displayName || username,
+        author: displayName || username,
+        avatar: buildDiscordAvatarUrl(user),
+        bot: Boolean(user.bot),
+      };
+    }
+  }
+
+  // Fallback: older/imported installations may have enough identity data locally.
   try {
     const local = await pool.query(
       `SELECT username, avatar_url FROM users WHERE discord_id = $1 LIMIT 1`,
@@ -58,45 +100,21 @@ async function resolveDiscordProfile(discordId) {
     );
     const row = local.rows?.[0];
     const localName = String(row?.username || '').trim();
-    if (localName && !/^(user|unknown user|archived user|discord user)$/i.test(localName)) {
+    if (localName && !PLACEHOLDER_NAMES.test(localName)) {
       return {
         id,
+        username: localName,
+        displayName: localName,
         author: localName,
         avatar: row?.avatar_url ? String(row.avatar_url) : null,
         bot: false,
       };
     }
   } catch (_) {
-    // Older installations may not have discord_id on users; continue to Discord API.
+    // Older schemas may not expose the local discord_id/avatar_url columns.
   }
 
-  const member = config.guildId
-    ? await discordJson(`/guilds/${encodeURIComponent(String(config.guildId))}/members/${encodeURIComponent(id)}`)
-    : null;
-  const user = member?.user || await discordJson(`/users/${encodeURIComponent(id)}`);
-  if (!user?.id) return null;
-
-  const displayName = String(
-    member?.nick || user.global_name || user.username || ''
-  ).trim();
-  if (!displayName) return null;
-
-  let avatar = '';
-  if (user.avatar) {
-    avatar = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${String(user.avatar).startsWith('a_') ? 'gif' : 'png'}?size=128`;
-  } else {
-    try {
-      const index = Number((BigInt(String(user.id)) >> 22n) % 6n);
-      avatar = `https://cdn.discordapp.com/embed/avatars/${index}.png`;
-    } catch (_) {}
-  }
-
-  return {
-    id: String(user.id),
-    author: displayName,
-    avatar: avatar || null,
-    bot: Boolean(user.bot),
-  };
+  return null;
 }
 
 async function hydrateTranscriptProfiles(html) {
@@ -111,9 +129,21 @@ async function hydrateTranscriptProfiles(html) {
     const current = profile && typeof profile === 'object' ? { ...profile } : {};
     const identity = await resolveDiscordProfile(profileId);
     if (!identity) return [profileId, current];
+
+    // DerockDev's Discord transcript component consumes the `author` and `avatar`
+    // profile fields. Preserve the rest of the saved profile state, but replace
+    // placeholder/stale identity data with the current Discord identity.
+    const currentAuthor = String(current.author || '').trim();
+    const currentDisplayName = String(current.displayName || '').trim();
+    const author = identity.displayName || identity.username || currentDisplayName || currentAuthor || 'Unknown User';
+
     return [profileId, {
       ...current,
-      author: identity.author,
+      id: identity.id || current.id || profileId,
+      username: identity.username || current.username,
+      displayName: identity.displayName || current.displayName,
+      globalName: identity.displayName || current.globalName,
+      author,
       avatar: identity.avatar || current.avatar,
       bot: identity.bot,
     }];
