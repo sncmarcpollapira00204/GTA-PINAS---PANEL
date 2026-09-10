@@ -5,6 +5,8 @@ const pool = require('../db');
 const config = require('../config.json');
 const jobs = new Map();
 
+const DISCORD_API = 'https://discord.com/api/v10';
+
 const SOURCES = {
   report: { label: 'Report', id: String(config.importSources?.categories?.report || '1531348087224926399'), prefixes: ['report-ticket-'] },
   suggestions: { label: 'Suggestions', id: String(config.importSources?.categories?.suggestions || '1531460333065994330'), prefixes: ['suggestion-'] },
@@ -28,21 +30,43 @@ function apiHeaders() {
   return { Authorization: `Bot ${value}`, 'User-Agent': 'GTA-Pinas-Web-Panel/1.0' };
 }
 
-async function discordRequest(pathname, options = {}) {
-  const response = await fetch(`https://discord.com/api/v10${pathname}`, {
-    ...options,
-    headers: { ...apiHeaders(), ...(options.headers || {}) },
-  });
-  const payload = await response.text();
-  let data = null;
-  try { data = JSON.parse(payload); } catch {}
-  if (!response.ok) {
-    const detail = data?.message || payload || `Discord request failed (${response.status}).`;
-    const error = new Error(detail);
-    error.status = response.status;
-    throw error;
+function sleep(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function discordRequest(pathname, options = {}, maxAttempts = 4) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(`${DISCORD_API}${pathname}`, {
+        ...options,
+        headers: { ...apiHeaders(), ...(options.headers || {}) },
+      });
+      const payload = await response.text();
+      let data = null;
+      try { data = JSON.parse(payload); } catch {}
+
+      if (response.ok) return data;
+
+      const detail = data?.message || payload || `Discord request failed (${response.status}).`;
+      const error = new Error(detail);
+      error.status = response.status;
+      lastError = error;
+
+      if (![429, 500, 502, 503, 504].includes(response.status) || attempt >= maxAttempts) throw error;
+
+      const retryAfter = Number(data?.retry_after || response.headers.get('retry-after') || 1);
+      await sleep(Math.min(5000, Math.max(250, retryAfter * 1000)));
+    } catch (error) {
+      lastError = error;
+      if (attempt >= maxAttempts) throw error;
+      if (error?.status && ![429, 500, 502, 503, 504].includes(error.status)) throw error;
+      await sleep(500 * attempt);
+    }
   }
-  return data;
+
+  throw lastError || new Error('Discord request failed.');
 }
 
 async function fetchChannelMessages(channelId, limit = 1000) {
@@ -75,31 +99,24 @@ function ticketNameMatches(name, source) {
   return source.prefixes.some((prefix) => normalized.startsWith(prefix));
 }
 
-function findAttachmentMessage(messages, index) {
-  for (let offset = 1; offset <= 3; offset += 1) {
-    const message = messages[index - offset];
-    if (message?.attachments?.length) return message;
-  }
-  for (let offset = 1; offset <= 2; offset += 1) {
-    const message = messages[index + offset];
-    if (message?.attachments?.length) return message;
-  }
-  return null;
-}
-
 function parseOwnerId(value) {
   return String(value || '').match(/<@!?(\d+)>/)?.[1] || null;
 }
 
-async function fetchGuildMember(discordId) {
-  if (!discordId) return null;
-  try {
-    const member = await discordRequest(`/guilds/${String(config.guildId)}/members/${String(discordId)}`);
-    return member || null;
-  } catch (error) {
-    if (error?.status === 404) return null;
-    throw error;
+function findAttachmentMessage(messages, index, ticketName) {
+  for (let offset = 1; offset <= 5; offset += 1) {
+    const message = messages[index - offset];
+    if (message?.attachments?.length) return message;
+    if (message?.embeds?.some((embed) => String(embed?.title || '').toLowerCase().includes(String(ticketName || '').toLowerCase()))) {
+      const next = messages[index - offset + 1];
+      if (next?.attachments?.length) return next;
+    }
   }
+  for (let offset = 1; offset <= 5; offset += 1) {
+    const message = messages[index + offset];
+    if (message?.attachments?.length) return message;
+  }
+  return null;
 }
 
 function buildAvatarUrl(user) {
@@ -115,16 +132,30 @@ function buildAvatarUrl(user) {
   }
 }
 
+async function fetchGuildMember(discordId) {
+  if (!discordId) return null;
+  try {
+    return await discordRequest(`/guilds/${String(config.guildId)}/members/${String(discordId)}`);
+  } catch (error) {
+    // Profile enrichment is optional; an unavailable member must never fail the import.
+    console.warn(`[IMPORT IDENTITY] Skipping ${discordId}: ${error.message}`);
+    return null;
+  }
+}
+
 async function upsertUser(userId, username, avatar = null) {
   if (!userId) return;
   await pool.query(
     `INSERT INTO users (id, username, avatar, is_bot, updated_at)
      VALUES ($1, $2, $3, FALSE, CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
-       username = EXCLUDED.username,
+       username = CASE
+         WHEN EXCLUDED.username IS NULL OR EXCLUDED.username = '' OR EXCLUDED.username = 'Unknown User' THEN users.username
+         ELSE EXCLUDED.username
+       END,
        avatar = COALESCE(EXCLUDED.avatar, users.avatar),
        updated_at = CURRENT_TIMESTAMP`,
-    [String(userId), String(username || 'Unknown User'), avatar || null]
+    [String(userId), username ? String(username) : 'Unknown User', avatar || null]
   );
 }
 
@@ -134,10 +165,13 @@ async function upsertStaff(staffId, username, avatar = null) {
     `INSERT INTO staff (id, username, avatar, updated_at)
      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
-       username = EXCLUDED.username,
+       username = CASE
+         WHEN EXCLUDED.username IS NULL OR EXCLUDED.username = '' OR EXCLUDED.username = 'Unknown Staff' THEN staff.username
+         ELSE EXCLUDED.username
+       END,
        avatar = COALESCE(EXCLUDED.avatar, staff.avatar),
        updated_at = CURRENT_TIMESTAMP`,
-    [String(staffId), String(username || 'Unknown Staff'), avatar || null]
+    [String(staffId), username ? String(username) : 'Unknown Staff', avatar || null]
   );
 }
 
@@ -189,8 +223,8 @@ async function storeImportedTranscript({ source, summary, ownerId, ticketOwnerNa
     ]
   );
 
-  if (ownerId) await upsertUser(ownerId, ticketOwnerName || 'Unknown User');
-  if (closedById) await upsertStaff(closedById, closedByName || 'Unknown Staff');
+  if (ownerId) await upsertUser(ownerId, ticketOwnerName || null);
+  if (closedById) await upsertStaff(closedById, closedByName || null);
 
   await pool.query(
     `DELETE FROM ticket_transcripts WHERE ticket_id=$1;
@@ -209,7 +243,7 @@ async function storeImportedTranscript({ source, summary, ownerId, ticketOwnerNa
     [deterministicId, `Imported ${ticketName} from Discord transcript channel.`, JSON.stringify({ summaryMessageId: summary.id, sourceCategoryId: source.id, panelName }), summary.id]
   );
 
-  return { ticketId: deterministicId, transcriptUrl, htmlImported: false };
+  return { ticketId: deterministicId, transcriptUrl, hasTranscript: Boolean(transcriptUrl) };
 }
 
 async function runImport(job, sourceKey) {
@@ -229,6 +263,8 @@ async function runImport(job, sourceKey) {
 
   let imported = 0;
   let failed = 0;
+  let transcriptCount = 0;
+  const failures = [];
 
   for (let index = 0; index < candidates.length; index += 1) {
     const summary = candidates[index];
@@ -236,12 +272,9 @@ async function runImport(job, sourceKey) {
     const ticketName = cleanText(fields['ticket name']);
     const rawOwner = String(fields['ticket owner'] || '');
     const ownerId = parseOwnerId(rawOwner);
-    const closedByRaw = String(
-      fields['closed by'] || fields['closed_by'] || fields['closed by staff'] || fields['handled by'] || ''
-    );
+    const closedByRaw = String(fields['closed by'] || fields['closed_by'] || fields['closed by staff'] || fields['handled by'] || '');
     const closedById = parseOwnerId(closedByRaw);
-
-    const attachmentMessage = findAttachmentMessage(messages, messages.indexOf(summary));
+    const attachmentMessage = findAttachmentMessage(messages, messages.indexOf(summary), ticketName);
     const transcriptUrl = attachmentMessage?.attachments?.[0]?.url || null;
 
     let ticketOwnerName = cleanText(rawOwner);
@@ -257,6 +290,7 @@ async function runImport(job, sourceKey) {
           ownerAvatar = buildAvatarUrl(ownerMember.user);
         }
       }
+
       if (closedById) {
         const closedByMember = await fetchGuildMember(closedById);
         if (closedByMember?.user) {
@@ -265,7 +299,7 @@ async function runImport(job, sourceKey) {
         }
       }
 
-      await storeImportedTranscript({
+      const result = await storeImportedTranscript({
         source,
         summary,
         ownerId,
@@ -277,23 +311,34 @@ async function runImport(job, sourceKey) {
         transcriptUrl,
       });
 
-      if (ownerId) await upsertUser(ownerId, ticketOwnerName || 'Unknown User', ownerAvatar);
-      if (closedById) await upsertStaff(closedById, closedByName || 'Unknown Staff', closerAvatar);
+      if (ownerId) await upsertUser(ownerId, ticketOwnerName, ownerAvatar);
+      if (closedById) await upsertStaff(closedById, closedByName, closerAvatar);
+      if (result.hasTranscript) transcriptCount += 1;
       imported += 1;
     } catch (error) {
       failed += 1;
+      failures.push({ ticketName: ticketName || `candidate-${index + 1}`, error: error.message });
       console.error('[IMPORT ITEM FAILED]', ticketName, error.message);
     }
+
     const progress = 10 + Math.round(((index + 1) / Math.max(1, candidates.length)) * 85);
-    setJob(job.id, { progress, stage: `Importing ${source.label}`, message: `${index + 1}/${candidates.length} processed.` });
+    setJob(job.id, {
+      progress,
+      stage: `Importing ${source.label}`,
+      message: `${index + 1}/${candidates.length} processed${transcriptUrl ? '' : ' (ticket saved, transcript attachment not detected)'}.`,
+    });
   }
 
+  const nothingFound = candidates.length === 0;
   setJob(job.id, {
-    status: 'completed',
+    status: failed > 0 && imported === 0 ? 'failed' : 'completed',
     progress: 100,
-    stage: 'Import complete',
-    message: `${source.label}: ${imported} imported, ${failed} failed.`,
-    result: { imported, failed, categoryId: source.id, transcriptChannelId: channelId },
+    stage: failed > 0 && imported === 0 ? 'Import failed' : 'Import complete',
+    message: nothingFound
+      ? `${source.label}: no matching ticket summaries found in the configured transcript channel.`
+      : `${source.label}: ${imported} tickets imported, ${transcriptCount} transcript links saved, ${failed} failed.${failures.length ? ` First error: ${failures[0].error}` : ''}`,
+    error: failures[0]?.error || null,
+    result: { imported, transcriptCount, failed, categoryId: source.id, transcriptChannelId: channelId, candidates: candidates.length, failures },
   });
 }
 
@@ -304,9 +349,23 @@ exports.startCategoryImport = async (req, res) => {
   const existing = [...jobs.values()].find((job) => job.status === 'queued' || job.status === 'running');
   if (existing) return res.status(409).json({ error: 'Another ticket import is already running.', job: existing });
 
-  const job = { id: crypto.randomUUID(), category: sourceKey, status: 'queued', progress: 0, stage: 'Queued', message: 'Import queued.', createdAt: Date.now(), updatedAt: Date.now() };
+  const job = {
+    id: crypto.randomUUID(),
+    category: sourceKey,
+    status: 'queued',
+    progress: 0,
+    stage: 'Queued',
+    message: 'Import queued.',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
   jobs.set(job.id, job);
-  setTimeout(() => runImport(job, sourceKey).catch((error) => setJob(job.id, { status: 'failed', stage: 'Import failed', error: error.message, message: error.message })), 0);
+  setTimeout(() => runImport(job, sourceKey).catch((error) => setJob(job.id, {
+    status: 'failed',
+    stage: 'Import failed',
+    error: error.message,
+    message: error.message,
+  })), 0);
   return res.status(202).json({ message: `Starting ${SOURCES[sourceKey].label} import.`, job });
 };
 
