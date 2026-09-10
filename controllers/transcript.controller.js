@@ -49,6 +49,27 @@ async function resolveDiscordProfile(discordId) {
   const id = String(discordId || '').trim();
   if (!/^\d{15,22}$/.test(id)) return null;
 
+  // Prefer the panel's own imported Discord identity. This keeps transcripts
+  // working even when Discord API lookup is unavailable or the bot lacks a guild permission.
+  try {
+    const local = await pool.query(
+      `SELECT username, avatar_url FROM users WHERE discord_id = $1 LIMIT 1`,
+      [id]
+    );
+    const row = local.rows?.[0];
+    const localName = String(row?.username || '').trim();
+    if (localName && !/^(user|unknown user|archived user|discord user)$/i.test(localName)) {
+      return {
+        id,
+        author: localName,
+        avatar: row?.avatar_url ? String(row.avatar_url) : null,
+        bot: false,
+      };
+    }
+  } catch (_) {
+    // Older installations may not have discord_id on users; continue to Discord API.
+  }
+
   const member = config.guildId
     ? await discordJson(`/guilds/${encodeURIComponent(String(config.guildId))}/members/${encodeURIComponent(id)}`)
     : null;
@@ -83,22 +104,13 @@ async function hydrateTranscriptProfiles(html) {
   const profiles = state && typeof state.profiles === 'object' && state.profiles !== null
     ? state.profiles
     : {};
-
   const entries = Object.entries(profiles);
   if (!entries.length) return state;
 
   const resolved = await Promise.all(entries.map(async ([profileId, profile]) => {
     const current = profile && typeof profile === 'object' ? { ...profile } : {};
-
-    // Discord transcript profiles are keyed by the real Discord user ID.
-    // Always hydrate numeric IDs so stale "User" placeholders cannot survive.
-    if (!/^\d{15,22}$/.test(String(profileId))) {
-      return [profileId, current];
-    }
-
     const identity = await resolveDiscordProfile(profileId);
     if (!identity) return [profileId, current];
-
     return [profileId, {
       ...current,
       author: identity.author,
@@ -143,47 +155,32 @@ exports.getTicketTranscriptHtml = async (req, res) => {
 
     const ticket = result.rows[0];
     let html = String(ticket.html_content || '');
-
-    if (!html) {
-      html = await fetchDiscordTranscript(ticket.discord_url || ticket.transcript_url);
-    }
-
-    if (!html) {
-      return res.status(404).send('Transcript file is no longer available from Discord.');
-    }
+    if (!html) html = await fetchDiscordTranscript(ticket.discord_url || ticket.transcript_url);
+    if (!html) return res.status(404).send('Transcript file is no longer available from Discord.');
 
     const state = await hydrateTranscriptProfiles(html);
-    const safeName = String(
-      ticket.ticket_number || ticket.channel_name || ticketId
-    ).replace(/[^a-zA-Z0-9_-]/g, '-');
+    const safeName = String(ticket.ticket_number || ticket.channel_name || ticketId).replace(/[^a-zA-Z0-9_-]/g, '-');
     const nonce = crypto.randomBytes(18).toString('base64');
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="transcript-${safeName}.html"`
-    );
+    res.setHeader('Content-Disposition', `inline; filename="transcript-${safeName}.html"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader(
-      'Content-Security-Policy',
-      [
-        'sandbox allow-scripts',
-        "default-src 'none'",
-        `script-src 'nonce-${nonce}' https://cdn.jsdelivr.net`,
-        "style-src 'unsafe-inline' https://fonts.bunny.net",
-        'img-src https: data: blob:',
-        'media-src https: data: blob:',
-        'font-src https: data:',
-        "connect-src 'none'",
-        "frame-src 'none'",
-        "object-src 'none'",
-        "base-uri 'none'",
-        "form-action 'none'",
-      ].join('; ')
-    );
+    res.setHeader('Content-Security-Policy', [
+      'sandbox allow-scripts',
+      "default-src 'none'",
+      `script-src 'nonce-${nonce}' https://cdn.jsdelivr.net`,
+      "style-src 'unsafe-inline' https://fonts.bunny.net",
+      'img-src https: data: blob:',
+      'media-src https: data: blob:',
+      'font-src https: data:',
+      "connect-src 'none'",
+      "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'none'",
+      "form-action 'none'",
+    ].join('; '));
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Transcript-Renderer', TRANSCRIPT_COMPONENT_SRC);
-
     return res.send(buildSafeTranscriptHtml(html, nonce, state));
   } catch (error) {
     console.error(`[API TRANSCRIPT HTML ${req.requestId}]`, error);
