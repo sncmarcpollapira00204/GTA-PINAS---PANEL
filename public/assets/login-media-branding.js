@@ -4,7 +4,38 @@
   let backgroundVideo = null;
   let mediaPromise = null;
 
-  document.title = 'GTA Pinas Web Panel';
+  document.title = 'GTA Pinas Roleplay Panel';
+
+  function applyGtaPinasBranding() {
+    document.querySelectorAll('.brand img').forEach((img) => {
+      img.src = '/assets/gta-pinas-logo.svg';
+      img.alt = 'GTA Pinas Roleplay';
+      img.removeAttribute('srcset');
+    });
+
+    const replacements = [
+      ['5th Avenue Roleplay', 'GTA Pinas Roleplay'],
+      ['5th Avenue Web Panel', 'GTA Pinas Web Panel'],
+      ['5TH AVENUE ROLEPLAY', 'GTA PINAS ROLEPLAY'],
+      ['5TH AVENUE', 'GTA PINAS'],
+    ];
+
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let node;
+    while ((node = walker.nextNode())) nodes.push(node);
+    nodes.forEach((textNode) => {
+      const parent = textNode.parentElement;
+      if (!parent || /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA)$/.test(parent.tagName)) return;
+      let next = textNode.nodeValue || '';
+      replacements.forEach(([from, to]) => {
+        next = next.split(from).join(to);
+      });
+      if (next !== textNode.nodeValue) textNode.nodeValue = next;
+    });
+  }
+
+  applyGtaPinasBranding();
 
   function shouldPlayBackground() {
     return !document.hidden;
@@ -114,10 +145,12 @@
       .then((payload) => {
         replaceLoginBackground(payload.slots?.login_banner);
         replaceLoginMusic(payload.slots?.login_music);
+        applyGtaPinasBranding();
         return payload;
       })
       .catch((error) => {
         console.warn('[LOGIN MEDIA]', error.message || error);
+        applyGtaPinasBranding();
         return null;
       });
 
