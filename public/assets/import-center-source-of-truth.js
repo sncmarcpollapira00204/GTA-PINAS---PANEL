@@ -13,6 +13,7 @@
 
   let busy = false;
   let observer = null;
+  let lastRenderedSignature = '';
 
   const esc = (value) => String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -106,8 +107,13 @@
   }
 
   function render(view) {
-    if (!view || view.dataset.importSourceTruthReady === '1') return;
+    if (!view) return;
+    const signature = `${SOURCE.transcriptChannelId}|${SOURCE.categories.map((item) => `${item.key}:${item.id}`).join('|')}`;
+    const hasOurButtons = SOURCE.categories.every((item) => view.querySelector(`[data-source-import="${item.key}"]`));
+    if (view.dataset.importSourceTruthReady === '1' && hasOurButtons && lastRenderedSignature === signature) return;
+
     view.dataset.importSourceTruthReady = '1';
+    lastRenderedSignature = signature;
     view.innerHTML = `
       <div class="simple-page">
         <div class="page-header">
@@ -160,7 +166,8 @@
     if (observer) observer.disconnect();
     observer = new MutationObserver(() => {
       const target = document.getElementById('view-import');
-      if (target && target.dataset.importSourceTruthReady !== '1') render(target);
+      if (!target) return;
+      if (!target.querySelector('[data-source-import="report"]')) render(target);
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
