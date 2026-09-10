@@ -21,7 +21,7 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-embed5`; 
+const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-embed6`;
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 let httpServer = null;
 let cleanupTimer = null;
@@ -38,11 +38,20 @@ function injectBeforeClosingTag(html, closingTag, snippets) {
   return html.replace(closingTag, `    ${missing.join('\n    ')}\n${closingTag}`);
 }
 
+function injectEmbedEditorNav(html) {
+  const settingsNav = `                        <a class="nav-item" data-target="view-settings" title="Settings">\n                            <i data-lucide="settings" size="18"></i><span class="nav-label">Settings</span>\n                        </a>`;
+  const embedNav = `                        <a class="nav-item" data-target="view-donation-embed-editor" title="Embed Editor" href="#">\n                            <i data-lucide="square-pen" size="18"></i><span class="nav-label">Embed Editor</span>\n                        </a>`;
+  if (html.includes('data-target="view-donation-embed-editor"')) return html;
+  if (!html.includes(settingsNav)) return html;
+  return html.replace(settingsNav, `${settingsNav}\n${embedNav}`);
+}
+
 async function loadPageTemplates() {
-  const [loginHtml, indexHtml] = await Promise.all([
+  const [loginHtml, rawIndexHtml] = await Promise.all([
     fs.readFile(path.join(PUBLIC_DIR, 'login.html'), 'utf8'),
     fs.readFile(path.join(PUBLIC_DIR, 'index.html'), 'utf8'),
   ]);
+  const indexHtml = injectEmbedEditorNav(rawIndexHtml);
   const loginScripts = [
     `<script defer src="/assets/login-media-branding.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/login-ost-autoplay.js?v=${PANEL_ASSET_VERSION}"></script>`,
