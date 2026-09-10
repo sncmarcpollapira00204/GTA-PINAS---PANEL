@@ -1,34 +1,42 @@
-/* GTA Pinas dashboard layout without background artwork. */
+/* GTA Pinas — modern management dashboard visual layer.
+ * Keeps the existing dashboard DOM/API intact while bringing the uploaded
+ * reference design into the live panel: compact header, glass cards,
+ * stronger hierarchy, Discord-style accent, and responsive spacing.
+ */
 
 #view-dashboard.active {
     position: relative !important;
     isolation: isolate;
     display: block !important;
     min-height: clamp(610px, calc(100vh - 150px), 820px);
-    padding: 0 0 28px;
+    padding: 0 0 32px;
     overflow: hidden;
-    border-radius: 16px;
-    background: var(--bg-main) !important;
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 78% 0%, rgba(88,101,242,.10), transparent 32%),
+        var(--bg-main) !important;
 }
 
 #view-dashboard::before,
 #view-dashboard::after {
-    content: none !important;
-    display: none !important;
-    background: none !important;
-    background-image: none !important;
+    pointer-events: none;
 }
 
-#view-dashboard > .dashboard-dynamic-media {
-    display: none !important;
+#view-dashboard::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(135deg, rgba(255,255,255,.025), transparent 42%);
 }
 
-/* Restore the clean dashboard header layout. */
+#view-dashboard > .dashboard-dynamic-media { display: none !important; }
+
 #view-dashboard .dashboard-header {
     min-height: 0 !important;
     width: 100% !important;
     margin: 0 0 24px !important;
-    padding: 0 !important;
+    padding: 2px 0 0 !important;
     position: relative !important;
     display: flex !important;
     align-items: flex-end !important;
@@ -44,15 +52,13 @@
     -webkit-backdrop-filter: none !important;
 }
 
-#view-dashboard .dashboard-header::after {
-    content: none !important;
-}
+#view-dashboard .dashboard-header::after { content: none !important; }
 
 #view-dashboard .dashboard-brand-copy {
     position: static !important;
     z-index: auto !important;
     width: auto !important;
-    max-width: none !important;
+    max-width: 760px !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -63,12 +69,20 @@
 }
 
 #view-dashboard .dashboard-brand-copy h1 {
+    margin: 0 !important;
     color: var(--text-main) !important;
+    font-size: clamp(26px, 3vw, 34px) !important;
+    line-height: 1.12 !important;
+    font-weight: 750 !important;
+    letter-spacing: -.035em !important;
     text-shadow: none !important;
 }
 
 #view-dashboard .dashboard-brand-copy p {
+    margin: 8px 0 0 !important;
     color: var(--text-sec) !important;
+    font-size: 14px !important;
+    line-height: 1.55 !important;
     text-shadow: none !important;
 }
 
@@ -76,78 +90,145 @@
     position: static !important;
     z-index: auto !important;
     flex: 0 0 auto !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
+    min-height: 42px !important;
+    padding: 0 16px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(88,101,242,.34) !important;
+    background: rgba(88,101,242,.13) !important;
+    color: #fff !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.06) !important;
+    transition: transform .18s ease, background .18s ease, border-color .18s ease !important;
+}
+
+#view-dashboard .dashboard-header > .btn:hover {
+    transform: translateY(-1px) !important;
+    background: rgba(88,101,242,.22) !important;
+    border-color: rgba(88,101,242,.55) !important;
 }
 
 #view-dashboard .dashboard-stats-grid {
     position: relative;
     z-index: 1;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 14px !important;
     margin-top: 0 !important;
-    margin-bottom: 32px !important;
+    margin-bottom: 28px !important;
 }
 
 #view-dashboard .dashboard-stat-card {
+    position: relative !important;
+    min-height: 126px !important;
+    padding: 20px !important;
+    border-radius: 15px !important;
+    border: 1px solid rgba(255,255,255,.07) !important;
+    background: linear-gradient(145deg, rgba(17,19,28,.92), rgba(13,15,22,.86)) !important;
+    box-shadow: 0 12px 35px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.035) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    overflow: hidden !important;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease !important;
+}
+
+#view-dashboard .dashboard-stat-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 100% 0, rgba(88,101,242,.10), transparent 42%);
+    pointer-events: none;
+}
+
+#view-dashboard .dashboard-stat-card:hover {
+    transform: translateY(-2px) !important;
+    border-color: rgba(255,255,255,.13) !important;
+    box-shadow: 0 18px 42px rgba(0,0,0,.28), 0 0 0 1px rgba(88,101,242,.08) inset !important;
+}
+
+#view-dashboard .dashboard-stat-card .stat-label,
+#view-dashboard .dashboard-stat-card .label {
+    color: var(--text-sec) !important;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .075em !important;
+}
+
+#view-dashboard .dashboard-stat-card .stat-value,
+#view-dashboard .dashboard-stat-card .value {
+    margin-top: 8px !important;
+    color: var(--text-main) !important;
+    font-size: 30px !important;
+    line-height: 1 !important;
+    font-weight: 750 !important;
+    letter-spacing: -.035em !important;
+}
+
+#view-dashboard .dashboard-stat-card .stat-icon,
+#view-dashboard .dashboard-stat-card .icon {
+    border-radius: 11px !important;
+    background: rgba(88,101,242,.11) !important;
+    border: 1px solid rgba(88,101,242,.16) !important;
+    color: #8790ff !important;
+}
+
+/* The lower dashboard sections should read like the supplied glass-panel reference. */
+#view-dashboard .card,
+#view-dashboard .panel,
+#view-dashboard .table-container,
+#view-dashboard .dashboard-card {
+    border-color: rgba(255,255,255,.07) !important;
+    border-radius: 15px !important;
+    background: rgba(17,19,28,.76) !important;
+    box-shadow: 0 12px 35px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.025) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+}
+
+#view-dashboard .card:hover,
+#view-dashboard .dashboard-card:hover { border-color: rgba(255,255,255,.12) !important; }
+
+#view-dashboard table th {
+    color: #858ca3 !important;
+    background: rgba(8,10,16,.28) !important;
+    font-size: 10px !important;
+    letter-spacing: .08em !important;
+}
+
+#view-dashboard table td { border-color: rgba(255,255,255,.055) !important; }
+#view-dashboard tbody tr:hover { background: rgba(88,101,242,.055) !important; }
+
+html[data-theme="light"] #view-dashboard .dashboard-header,
+html[data-theme="light"] #view-dashboard .dashboard-brand-copy { background: transparent !important; }
+
+html[data-theme="light"] #view-dashboard .dashboard-stat-card,
+html[data-theme="light"] #view-dashboard .card,
+html[data-theme="light"] #view-dashboard .panel,
+html[data-theme="light"] #view-dashboard .table-container,
+html[data-theme="light"] #view-dashboard .dashboard-card {
     background: var(--bg-card) !important;
-    box-shadow: none !important;
+    box-shadow: 0 10px 26px rgba(0,0,0,.07) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
 
-html[data-theme="light"] #view-dashboard .dashboard-header,
-html[data-theme="light"] #view-dashboard .dashboard-stat-card {
-    background: transparent !important;
-}
-
-html[data-theme="light"] #view-dashboard .dashboard-stat-card {
-    background: var(--bg-card) !important;
+@media (max-width: 1100px) {
+    #view-dashboard .dashboard-stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
 }
 
 @media (max-width: 900px) {
-    #view-dashboard.active {
-        min-height: 650px;
-    }
-
-    #view-dashboard .dashboard-header {
-        margin-bottom: 18px !important;
-        padding: 0 !important;
-    }
-
-    #view-dashboard .dashboard-stats-grid {
-        margin-top: 0 !important;
-    }
+    #view-dashboard.active { min-height: 650px; }
+    #view-dashboard .dashboard-header { margin-bottom: 18px !important; }
 }
 
 @media (max-width: 620px) {
-    #view-dashboard.active {
-        min-height: 760px;
-        padding-bottom: 18px;
-        border-radius: 12px;
-    }
-
-    #view-dashboard .dashboard-header {
-        padding: 0 !important;
-        align-items: stretch !important;
-        flex-direction: column !important;
-    }
-
-    #view-dashboard .dashboard-header > .btn {
-        width: 100% !important;
-        min-height: 44px !important;
-    }
-
-    #view-dashboard .dashboard-stats-grid {
-        margin-top: 0 !important;
-    }
+    #view-dashboard.active { min-height: 760px; padding-bottom: 18px; border-radius: 12px; }
+    #view-dashboard .dashboard-header { align-items: stretch !important; flex-direction: column !important; }
+    #view-dashboard .dashboard-header > .btn { width: 100% !important; min-height: 44px !important; }
+    #view-dashboard .dashboard-stats-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
     #view-dashboard .dashboard-header,
-    #view-dashboard .dashboard-brand-copy {
-        transition: none !important;
-    }
-
-    #view-dashboard > .dashboard-dynamic-media {
-        display: none !important;
-    }
+    #view-dashboard .dashboard-brand-copy,
+    #view-dashboard .dashboard-stat-card { transition: none !important; }
 }
