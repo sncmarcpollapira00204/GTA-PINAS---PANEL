@@ -1,7 +1,7 @@
 (() => {
     'use strict';
 
-    const state = { channels: [], initialized: false };
+    const state = { channels: [], initialized: false, shortcutBound: false };
 
     const esc = (value) => String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -48,12 +48,24 @@
             #view-donation-embed-editor .dee-embed-description .discord-heading{font-weight:800;color:#f2f3f5;font-size:15px;line-height:1.35;margin:14px 0 7px}
             #view-donation-embed-editor .dee-embed-description .discord-heading:first-child{margin-top:0}
             #view-donation-embed-editor .dee-embed-description .discord-list{margin:0 0 8px;padding-left:18px}.dee-embed-description .discord-list li{padding-left:2px;margin:2px 0}
+            #view-donation-embed-editor .dee-embed-description .discord-quote{border-left:3px solid #4e5058;padding:2px 0 2px 10px;color:#b5bac1;margin:4px 0}
             #view-donation-embed-editor .dee-embed-description .discord-code{display:inline-block;background:#1e1f22;border-radius:3px;padding:1px 4px;font-family:monospace;font-size:10px}
+            #view-donation-embed-editor .dee-embed-description .discord-bold{font-weight:700}
+            #view-donation-embed-editor .dee-embed-description .discord-italic{font-style:italic}
+            #view-donation-embed-editor .dee-embed-description .discord-underline{text-decoration:underline}
+            #view-donation-embed-editor .dee-embed-description .discord-strike{text-decoration:line-through}
+            #view-donation-embed-editor .dee-embed-description .discord-spoiler{background:#1e1f22;color:#1e1f22;border-radius:3px;padding:0 4px}
+            #view-donation-embed-editor .dee-embed-description .discord-spoiler:hover{color:#dbdee1}
             #view-donation-embed-editor .dee-embed-thumbnail{position:absolute;top:10px;right:12px;width:72px;height:72px;border-radius:4px;object-fit:cover}.dee-embed-image{display:block;width:100%;max-height:260px;border-radius:4px;margin-top:10px;object-fit:contain}
             #view-donation-embed-editor .dee-embed-footer{color:#949ba4;font-size:9px;margin-top:10px;padding-top:2px}
             #view-donation-embed-editor .dee-send-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}.dee-send-box label{display:block;font-size:10px;font-weight:700;color:var(--text-main);margin-bottom:6px}.dee-status{margin-top:10px;font-size:10px;color:var(--text-sec);min-height:16px}.dee-status.error{color:var(--danger)}.dee-status.success{color:var(--success)}
             #view-donation-embed-editor #dee-channel{height:36px}
             #view-donation-embed-editor #dee-send-button{min-height:34px;width:auto!important;margin-top:0!important;padding:7px 14px}
+            #view-donation-embed-editor .dee-toolbar{display:flex;align-items:center;gap:3px;margin-top:6px;padding:4px 5px;border:1px solid var(--border);border-bottom:0;border-radius:6px 6px 0 0;background:var(--bg-card)}
+            #view-donation-embed-editor .dee-toolbar button{width:27px;height:26px;border:0;border-radius:4px;background:transparent;color:var(--text-main);font:inherit;font-weight:700;font-size:12px;cursor:pointer;display:grid;place-items:center}
+            #view-donation-embed-editor .dee-toolbar button:hover{background:var(--bg-main)}
+            #view-donation-embed-editor .dee-toolbar .toolbar-sep{width:1px;height:18px;background:var(--border);margin:0 2px}
+            #view-donation-embed-editor #dee-description{border-top-left-radius:0;border-top-right-radius:0;margin-top:0}
             @media(max-width:900px){#view-donation-embed-editor .dee-shell{grid-template-columns:1fr}.dee-preview-wrap{position:static}}
             @media(max-width:620px){#view-donation-embed-editor .dee-grid{grid-template-columns:1fr}.dee-field.full{grid-column:auto}.dee-card{padding:15px!important}.dee-actions{flex-direction:column;align-items:stretch}.dee-actions .btn{flex:1;width:100%}}
         `;
@@ -83,7 +95,7 @@
                     <div class="dee-grid">
                         <div class="dee-field"><label for="dee-title">Title</label><input id="dee-title" maxlength="256" placeholder="e.g. Donation Price List"></div>
                         <div class="dee-field"><label for="dee-color">Accent color</label><input id="dee-color" maxlength="7" value="#2563EB" placeholder="#2563EB"></div>
-                        <div class="dee-field full"><label for="dee-description">Description</label><textarea id="dee-description" maxlength="4000" placeholder="Write your donation information here..."></textarea></div>
+                        <div class="dee-field full"><label for="dee-description">Description</label><div class="dee-toolbar" role="toolbar" aria-label="Description formatting"><button type="button" data-format="bold" title="Bold">B</button><button type="button" data-format="italic" title="Italic"><i>I</i></button><button type="button" data-format="underline" title="Underline"><u>U</u></button><button type="button" data-format="strike" title="Strikethrough"><s>S</s></button><span class="toolbar-sep"></span><button type="button" data-format="quote" title="Quote">❝</button><button type="button" data-format="code" title="Inline code">&lt;&gt;</button><button type="button" data-format="spoiler" title="Spoiler">⊙</button><button type="button" data-format="link" title="Link">↗</button></div><textarea id="dee-description" maxlength="4000" placeholder="Write your donation information here..."></textarea></div>
                         <div class="dee-field"><label for="dee-image">Large image URL</label><input id="dee-image" maxlength="2048" placeholder="https://..."></div>
                         <div class="dee-field"><label for="dee-thumbnail">Thumbnail URL</label><input id="dee-thumbnail" maxlength="2048" placeholder="https://..."></div>
                         <div class="dee-field"><label for="dee-author">Author</label><input id="dee-author" maxlength="256" placeholder="GTA Pinas Treasury"></div>
@@ -98,12 +110,26 @@
                 <section class="dee-card dee-preview-wrap"><div class="dee-preview-label"><strong>Discord preview</strong><button class="dee-preview-trigger" type="button" onclick="window.donationEmbedEditor.preview()">Preview</button></div><div id="dee-preview" class="dee-discord"></div></section>
             </div>`;
         main.appendChild(section);
+        bindToolbar();
     }
 
     function formData() {
         return {
             title: document.getElementById('dee-title')?.value || '', description: document.getElementById('dee-description')?.value || '', color: document.getElementById('dee-color')?.value || '', image: document.getElementById('dee-image')?.value || '', thumbnail: document.getElementById('dee-thumbnail')?.value || '', author: document.getElementById('dee-author')?.value || '', footer: document.getElementById('dee-footer')?.value || ''
         };
+    }
+
+    function formatInline(value) {
+        let text = esc(value);
+        text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        text = text.replace(/~~([^~]+)~~/g, '<span class="discord-strike">$1</span>');
+        text = text.replace(/\|\|([^|]+)\|\|/g, '<span class="discord-spoiler">$1</span>');
+        text = text.replace(/`([^`]+)`/g, '<span class="discord-code">$1</span>');
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<span class="discord-bold">$1</span>');
+        text = text.replace(/__([^_]+)__/g, '<span class="discord-underline">$1</span>');
+        text = text.replace(/\*([^*]+)\*/g, '<span class="discord-italic">$1</span>');
+        text = text.replace(/_([^_]+)_/g, '<span class="discord-italic">$1</span>');
+        return text;
     }
 
     function renderDescription(value) {
@@ -126,10 +152,17 @@
                 return;
             }
 
-            const heading = trimmed.match(/^#{1,6}\s+(.+)$/);
+            const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
             if (heading) {
                 flushList();
-                output.push(`<div class="discord-heading">${formatInline(heading[1])}</div>`);
+                output.push(`<div class="discord-heading">${formatInline(heading[2])}</div>`);
+                return;
+            }
+
+            const quote = trimmed.match(/^>\s?(.*)$/);
+            if (quote) {
+                flushList();
+                output.push(`<div class="discord-quote">${formatInline(quote[1])}</div>`);
                 return;
             }
 
@@ -145,13 +178,6 @@
         });
         flushList();
         return output.join('');
-    }
-
-    function formatInline(value) {
-        let text = esc(value);
-        text = text.replace(/`([^`]+)`/g, '<span class="discord-code">$1</span>');
-        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        return text;
     }
 
     function renderPreview() {
@@ -172,6 +198,50 @@
                     ${data.footer ? `<div class="dee-embed-footer">${esc(data.footer)}</div>` : ''}
                 </div>
             </div>`;
+    }
+
+    function applyFormat(format) {
+        const textarea = document.getElementById('dee-description');
+        if (!textarea) return;
+        const start = textarea.selectionStart ?? 0;
+        const end = textarea.selectionEnd ?? start;
+        const selected = textarea.value.slice(start, end);
+        const config = {
+            bold: ['**', '**', 'bold text'],
+            italic: ['*', '*', 'italic text'],
+            underline: ['__', '__', 'underlined text'],
+            strike: ['~~', '~~', 'struck text'],
+            quote: ['> ', '', 'quote'],
+            code: ['`', '`', 'code'],
+            spoiler: ['||', '||', 'spoiler'],
+            link: ['[', '](https://example.com)', 'link text'],
+        };
+        const [before, after, fallback] = config[format] || ['', '', ''];
+        const content = selected || fallback;
+        textarea.setRangeText(`${before}${content}${after}`, start, end, 'select');
+        textarea.focus();
+        renderPreview();
+    }
+
+    function bindToolbar() {
+        const textarea = document.getElementById('dee-description');
+        const toolbar = document.querySelector('#view-donation-embed-editor .dee-toolbar');
+        if (!textarea || !toolbar || state.shortcutBound) return;
+        state.shortcutBound = true;
+        toolbar.querySelectorAll('button[data-format]').forEach((button) => {
+            button.addEventListener('click', () => applyFormat(button.dataset.format));
+        });
+        textarea.addEventListener('input', renderPreview);
+        ['dee-title','dee-color','dee-image','dee-thumbnail','dee-author','dee-footer'].forEach((id) => document.getElementById(id)?.addEventListener('input', renderPreview));
+        textarea.addEventListener('keydown', (event) => {
+            const key = event.key.toLowerCase();
+            if (!event.ctrlKey && !event.metaKey) return;
+            const formats = { b: 'bold', i: 'italic', u: 'underline', s: 'strike', e: 'code' };
+            if (formats[key]) {
+                event.preventDefault();
+                applyFormat(formats[key]);
+            }
+        });
     }
 
     async function loadChannels() {
@@ -220,6 +290,7 @@
         if (window.renderPanelIcons) window.renderPanelIcons();
         renderPreview(); loadChannels();
         if (typeof window.toggleMobileSidebar === 'function') window.toggleMobileSidebar(false);
+        bindToolbar();
     }
 
     window.donationEmbedEditor = { reset, preview: renderPreview, send, open: openEditor };
