@@ -46,23 +46,25 @@
       ]);
 
       const normalizedTickets = Array.isArray(tickets) ? tickets : [];
-
-      // Use the existing panel's own lexical variables/functions without editing
-      // the very large inline index script. Global eval runs in the same page realm.
       const serialized = JSON.stringify(normalizedTickets).replace(/</g, '\\u003c');
       const dashboardJson = JSON.stringify(dashboard || {}).replace(/</g, '\\u003c');
       const bridge = `(() => {
         const dash = ${dashboardJson};
         const nextTickets = ${serialized};
-        try { document.getElementById('stat-open')?.textContent = String(dash.openTickets ?? 0); } catch (_) {}
-        try { document.getElementById('nav-open-count')?.textContent = String(dash.openTickets ?? 0); } catch (_) {}
-        try { document.getElementById('stat-closed')?.textContent = String(dash.closedTickets ?? 0); } catch (_) {}
+        const openStat = document.getElementById('stat-open');
+        const openNav = document.getElementById('nav-open-count');
+        const closedStat = document.getElementById('stat-closed');
+        if (openStat) openStat.textContent = String(dash.openTickets ?? 0);
+        if (openNav) openNav.textContent = String(dash.openTickets ?? 0);
+        if (closedStat) closedStat.textContent = String(dash.closedTickets ?? 0);
         try {
           allTickets = nextTickets;
           if (typeof renderTickets === 'function') renderTickets({ renderTranscripts: true });
           if (typeof renderTranscriptList === 'function' && document.getElementById('view-transcripts')?.classList.contains('active')) renderTranscriptList();
-        } catch (error) { console.warn('[PANEL SYNC] ticket render bridge failed:', error); }
-      })()`;
+        } catch (error) {
+          console.warn('[PANEL SYNC] ticket render bridge failed:', error);
+        }
+      })();`;
       window.eval(bridge);
 
       window.dispatchEvent(new CustomEvent('gta-pinas-ticket-sync', { detail: { dashboard, tickets: normalizedTickets } }));
