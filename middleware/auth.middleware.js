@@ -17,9 +17,16 @@ async function loadAuthentication(req, res, next) {
 
     let user = session.user_data;
 
-    // A management revocation always overrides Discord roles and env-based access.
-    // Check it on every authenticated request so removal takes effect immediately.
-    if (await staffManagement.isPanelAccessRevoked(user?.id)) {
+    // Revocation storage is an auxiliary safety check. A transient failure must
+    // not turn a valid authenticated session into a 503 on read-only requests.
+    let revoked = false;
+    try {
+      revoked = await staffManagement.isPanelAccessRevoked(user?.id);
+    } catch (error) {
+      console.warn(`[AUTH REVOCATION CHECK ${req.requestId || 'no-request-id'}]`, error.message);
+    }
+
+    if (revoked) {
       await authService.deleteSession(rawToken).catch(() => {});
       authService.clearSessionCookie(res);
       await authService.logAuthEvent({
@@ -28,7 +35,7 @@ async function loadAuthentication(req, res, next) {
         eventType: 'access_revoked',
         req,
         metadata: { source: 'manage_staff' },
-      });
+      }).catch(() => {});
       req.auth = null;
       req.authError = null;
       return next();
@@ -44,7 +51,7 @@ async function loadAuthentication(req, res, next) {
         username: user.username,
         eventType: 'access_revoked',
         req,
-      });
+      }).catch(() => {});
       req.auth = null;
       req.authError = null;
       return next();
