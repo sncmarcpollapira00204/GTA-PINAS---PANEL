@@ -2,12 +2,15 @@
 
 const pool = require('../db');
 const config = require('../config.json');
+const identityBackfill = require('../services/ticketIdentityBackfill.service');
 
 const transcriptChannelIds = [
   ...Object.values(config.transcriptChannels || {}),
   config.mainTranscriptChannelId,
   config.importSources?.transcriptChannelId,
 ].filter(Boolean).map(String).filter((value, index, array) => array.indexOf(value) === index);
+
+identityBackfill.schedule();
 
 function sendInternalError(req, res, error) {
   console.error('[API SIMPLE TICKETS ERROR]', error);
@@ -46,7 +49,7 @@ exports.getTickets = async (req, res) => {
         t.transcript_url,
         t.import_source,
         t.updated_at,
-        COALESCE(u.username, NULL) AS user_username,
+        u.username AS user_username,
         u.avatar AS user_avatar,
         assigned.username AS staff_username,
         assigned.avatar AS staff_avatar,
