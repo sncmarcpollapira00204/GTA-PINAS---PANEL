@@ -132,11 +132,35 @@ async function queryTicketDetails(ticketId) {
     ),
   ]);
 
+  const ticket = ticketResult.rows[0];
+  let transcript = transcriptResult.rows[0] || null;
+
+  // Imported transcripts are stored as lightweight Discord links on the ticket.
+  // Use those fields as the fallback when no local ticket_transcripts row exists.
+  if (transcript) {
+    transcript = {
+      ...transcript,
+      discord_url: transcript.discord_url || ticket.transcript_url || null,
+      log_channel_id: transcript.log_channel_id || ticket.transcript_channel_id || null,
+      log_message_id: transcript.log_message_id || ticket.transcript_message_id || null,
+    };
+  } else if (ticket.transcript_url) {
+    transcript = {
+      id: null,
+      ticket_id: ticket.id,
+      discord_url: ticket.transcript_url,
+      log_channel_id: ticket.transcript_channel_id || null,
+      log_message_id: ticket.transcript_message_id || null,
+      generated_at: ticket.closed_at || ticket.updated_at || null,
+      html_size: null,
+    };
+  }
+
   return {
-    ticket: ticketResult.rows[0],
+    ticket,
     messages: messagesResult.rows,
     logs: logsResult.rows,
-    transcript: transcriptResult.rows[0] || null,
+    transcript,
   };
 }
 
