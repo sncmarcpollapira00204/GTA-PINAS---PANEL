@@ -5,104 +5,18 @@
 
   document.title = 'GTA Pinas Roleplay Management Panel';
 
-  function applyLoginUi() {
-    if (document.getElementById('gtapinas-login-ui')) return;
-
-    const style = document.createElement('style');
-    style.id = 'gtapinas-login-ui';
-    style.textContent = `
-      .login-panel {
-        width: min(460px, calc(100vw - 32px)) !important;
-        padding: 32px !important;
-        border: 1px solid rgba(255,255,255,.22) !important;
-        border-radius: 24px !important;
-        background: linear-gradient(145deg, rgba(10,18,34,.58), rgba(4,10,22,.38)) !important;
-        box-shadow: 0 30px 90px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.10) !important;
-        backdrop-filter: blur(22px) saturate(135%) !important;
-        -webkit-backdrop-filter: blur(22px) saturate(135%) !important;
-      }
-
-      .login-panel::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        pointer-events: none;
-        background: linear-gradient(135deg, rgba(255,255,255,.08), transparent 35%, rgba(98,197,255,.045));
-      }
-
-      .brand { gap: 15px !important; margin-bottom: 24px !important; }
-      .brand img {
-        width: 58px !important;
-        height: 58px !important;
-        padding: 7px !important;
-        border: 1px solid rgba(255,255,255,.15) !important;
-        border-radius: 16px !important;
-        background: rgba(255,255,255,.06) !important;
-        box-shadow: 0 12px 28px rgba(0,0,0,.24) !important;
-      }
-      .brand small { color: #8ed8ff !important; font-size: 9px !important; letter-spacing: .18em !important; }
-      .brand h1 { font-size: 21px !important; letter-spacing: -.02em !important; }
-      .description { margin-bottom: 24px !important; color: rgba(231,239,250,.78) !important; font-size: 13px !important; line-height: 1.7 !important; }
-
-      .discord-login {
-        min-height: 54px !important;
-        border: 1px solid rgba(255,255,255,.10) !important;
-        border-radius: 13px !important;
-        background: linear-gradient(135deg, #5865f2, #4264e8) !important;
-        box-shadow: 0 14px 32px rgba(66,100,232,.30) !important;
-      }
-      .discord-login:hover {
-        background: linear-gradient(135deg, #6875ff, #4d70f2) !important;
-        box-shadow: 0 18px 38px rgba(66,100,232,.38) !important;
-      }
-
-      .access-note { margin-top: 18px !important; padding-top: 17px !important; border-top-color: rgba(255,255,255,.12) !important; color: rgba(199,212,232,.72) !important; }
-      .maintained { margin-top: 9px !important; color: rgba(255,255,255,.56) !important; }
-
-      /* Keep only the play/pause control in the lower-right corner. */
-      .ost-player {
-        width: 52px !important;
-        height: 52px !important;
-        right: 20px !important;
-        bottom: 20px !important;
-        display: block !important;
-        padding: 0 !important;
-        border-radius: 50% !important;
-        background: rgba(7,14,28,.48) !important;
-        border: 1px solid rgba(255,255,255,.20) !important;
-        box-shadow: 0 14px 35px rgba(0,0,0,.34) !important;
-        backdrop-filter: blur(16px) saturate(130%) !important;
-        -webkit-backdrop-filter: blur(16px) saturate(130%) !important;
-      }
-      .ost-copy, .ost-progress, .ost-mute { display: none !important; }
-      .ost-toggle {
-        display: grid !important;
-        width: 52px !important;
-        height: 52px !important;
-        margin: 0 !important;
-        border: 0 !important;
-        border-radius: 50% !important;
-        background: transparent !important;
-      }
-      .ost-toggle:hover { background: rgba(88,101,242,.18) !important; transform: none !important; }
-      .ost-toggle svg { width: 19px !important; height: 19px !important; }
-    `;
-    document.head.appendChild(style);
-  }
-
   function clearLoginBackground() {
     document.querySelector('.login-background')?.remove();
     document.querySelector('.background-overlay')?.remove();
   }
 
   function applyGtaPinasBranding() {
-    applyLoginUi();
-
     document.querySelectorAll('.brand img').forEach((img) => {
       img.src = '/assets/gta-pinas-logo.svg';
       img.alt = 'GTA Pinas Roleplay';
       img.removeAttribute('srcset');
+      img.style.mixBlendMode = 'screen';
+      img.style.background = 'transparent';
     });
 
     document.querySelectorAll('.brand h1').forEach((element) => {
@@ -115,6 +29,17 @@
 
     document.querySelectorAll('.maintained').forEach((element) => {
       element.textContent = 'Managed by Zoey';
+    });
+
+    document.querySelectorAll('.login-panel').forEach((panel) => {
+      Object.assign(panel.style, {
+        background: 'rgba(8, 16, 31, 0.48)',
+        border: '1px solid rgba(255, 255, 255, 0.22)',
+        borderRadius: '20px',
+        boxShadow: '0 28px 80px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(24px) saturate(125%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(125%)',
+      });
     });
 
     const replacements = [
@@ -174,7 +99,7 @@
       height: '100%',
       objectFit: 'cover',
       objectPosition: 'center',
-      filter: 'brightness(.66) saturate(1.02)',
+      filter: 'brightness(.78) saturate(1.02)',
       pointerEvents: 'none',
       userSelect: 'none',
     });
@@ -186,7 +111,7 @@
       position: 'absolute',
       inset: '0',
       zIndex: '1',
-      background: 'linear-gradient(90deg, rgba(2,8,20,.14), rgba(2,8,20,.28)), linear-gradient(180deg, rgba(2,8,20,.06), rgba(2,8,20,.22))',
+      background: 'linear-gradient(90deg, rgba(2,8,20,.10), rgba(2,8,20,.22)), linear-gradient(180deg, rgba(2,8,20,.04), rgba(2,8,20,.16))',
       pointerEvents: 'none',
     });
 
@@ -196,11 +121,11 @@
 
   applyGtaPinasBranding();
 
-  function replaceLoginMusic() {
+  function replaceLoginMusic(asset) {
     const audio = document.getElementById('loginOst');
     if (!audio) return;
 
-    const forcedMusicUrl = `/assets/gtapinasmusic2.mp3?v=20260911-music4`;
+    const forcedMusicUrl = `/assets/gtapinasmusic2.mp3?v=20260911-music3`;
     const resolvedUrl = new URL(forcedMusicUrl, window.location.href).href;
 
     if (audio.src !== resolvedUrl) {
@@ -211,6 +136,11 @@
       audio.preload = 'auto';
       audio.load();
       if (wasPlaying) void audio.play().catch(() => {});
+    }
+
+    const watermark = document.querySelector('.ost-watermark');
+    if (watermark) {
+      watermark.textContent = 'GTA Pinas OST';
     }
   }
 
@@ -227,13 +157,13 @@
       })
       .then((payload) => {
         injectBackground(payload.slots?.login_banner);
-        replaceLoginMusic();
+        replaceLoginMusic(payload.slots?.login_music);
         applyGtaPinasBranding();
         return payload;
       })
       .catch((error) => {
         console.warn('[LOGIN MEDIA]', error.message || error);
-        replaceLoginMusic();
+        replaceLoginMusic(null);
         applyGtaPinasBranding();
         return null;
       });
