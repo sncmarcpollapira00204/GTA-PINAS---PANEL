@@ -1,6 +1,7 @@
 const express = require('express');
 const apiController = require('../controllers/api.controller');
 const importController = require('../controllers/import.controller');
+const simpleTicketsController = require('../controllers/tickets.simple.controller');
 const optimizedController = require('../controllers/optimized.controller');
 const ticketReadController = require('../controllers/ticketRead.controller');
 const ticketSummaryController = require('../controllers/ticketSummary.controller');
@@ -24,6 +25,7 @@ const mediaUploadParser = express.raw({
 
 router.get('/dashboard', apiController.getDashboardStats);
 router.get('/tickets', apiController.getTickets);
+router.get('/tickets/simple', simpleTicketsController.getTickets);
 router.get('/tickets/:id/transcript', requireTicketReadAccess, transcriptController.getTicketTranscriptHtml);
 router.get('/tickets/:id/summary', requireTicketReadAccess, ticketSummaryController.getTicketSummary);
 router.get('/tickets/:id', requireTicketReadAccess, ticketReadController.getTicketById);
