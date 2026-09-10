@@ -2,6 +2,7 @@
 
 const pool = require('../db');
 const { BoundedTtlCache, integerInRange } = require('../utils/boundedTtlCache');
+const { enrichMessages } = require('../services/transcriptIdentity.service');
 
 const DETAIL_CACHE_MS = integerInRange(
   process.env.TICKET_DETAIL_CACHE_MS,
@@ -135,8 +136,6 @@ async function queryTicketDetails(ticketId) {
   const ticket = ticketResult.rows[0];
   let transcript = transcriptResult.rows[0] || null;
 
-  // Imported transcripts are stored as lightweight Discord links on the ticket.
-  // Use those fields as the fallback when no local ticket_transcripts row exists.
   if (transcript) {
     transcript = {
       ...transcript,
@@ -156,9 +155,11 @@ async function queryTicketDetails(ticketId) {
     };
   }
 
+  const messages = await enrichMessages(messagesResult.rows);
+
   return {
     ticket,
-    messages: messagesResult.rows,
+    messages,
     logs: logsResult.rows,
     transcript,
   };
