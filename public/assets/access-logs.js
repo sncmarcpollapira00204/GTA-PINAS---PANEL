@@ -309,9 +309,35 @@
     }
   }
 
+  function removeTranscriptMetadataPanel() {
+    const apply = () => {
+      const view = document.getElementById('view-transcripts');
+      if (!view) return;
+
+      view.querySelectorAll('.transcript-meta-panel, #transcript-meta-panel, .transcript-metadata-panel, #transcript-metadata-panel')
+        .forEach(element => element.remove());
+
+      const workspace = view.querySelector('.transcript-workspace');
+      if (workspace) {
+        workspace.style.setProperty('grid-template-columns', 'minmax(250px,292px) minmax(0,1fr)', 'important');
+        workspace.style.setProperty('gap', '12px', 'important');
+      }
+    };
+
+    apply();
+    if (document.body) {
+      const observer = new MutationObserver(apply);
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', removeExtraDashboardStats, { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+      removeExtraDashboardStats();
+      removeTranscriptMetadataPanel();
+    }, { once: true });
   } else {
     removeExtraDashboardStats();
+    removeTranscriptMetadataPanel();
   }
 })();
