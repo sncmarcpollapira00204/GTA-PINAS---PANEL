@@ -20,7 +20,7 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix2`;
+const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix3`;
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 let httpServer = null;
 let cleanupTimer = null;
@@ -135,6 +135,103 @@ async function readinessResponse(req, res) {
   catch (error) { return res.status(503).json({ status: 'error', database: 'disconnected', authentication: 'enabled', requestId: req.requestId }); }
 }
 app.get(['/api/health', '/api/health/ready'], readinessResponse);
+
+// Stable, minimal ticket endpoints. These sit before the legacy router so dashboard
+// and live ticket refreshes keep working even when optional joins/config are stale.
+app.get('/api/dashboard', requireApiAuth, async (req, res) => {
+  try {
+    let result;
+    try {
+      result = await pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'open')::INTEGER AS open_tickets,
+          COUNT(*) FILTER (WHERE status = 'closed' AND transcript_channel_id = $1)::INTEGER AS closed_tickets,
+          COUNT(*) FILTER (WHERE status IN ('open','closed') AND (status = 'open' OR transcript_channel_id = $1))::INTEGER AS total_tickets,
+          MAX(COALESCE(updated_at, last_activity_at, closed_at, created_at)) AS tickets_version
+        FROM tickets
+      `, ['1531349051998732349']);
+    } catch (primaryError) {
+      console.error('[STABLE DASHBOARD PRIMARY ERROR]', primaryError);
+      result = await pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'open')::INTEGER AS open_tickets,
+          COUNT(*) FILTER (WHERE status = 'closed')::INTEGER AS closed_tickets,
+          COUNT(*)::INTEGER AS total_tickets,
+          MAX(COALESCE(updated_at, last_activity_at, closed_at, created_at)) AS tickets_version
+        FROM tickets
+      `);
+    }
+
+    let staffOnline = 0;
+    try {
+      const staffResult = await pool.query('SELECT COUNT(*)::INTEGER AS count FROM staff');
+      staffOnline = Number(staffResult.rows[0]?.count || 0);
+    } catch (error) {
+      console.warn('[STABLE DASHBOARD STAFF ERROR]', error.message);
+    }
+
+    const row = result.rows[0] || {};
+    return res.json({
+      openTickets: Number(row.open_tickets || 0),
+      closedTickets: Number(row.closed_tickets || 0),
+      totalTickets: Number(row.total_tickets || 0),
+      ticketsVersion: row.tickets_version || null,
+      staffOnline,
+    });
+  } catch (error) {
+    console.error('[STABLE DASHBOARD ERROR]', error);
+    return res.status(500).json({ error: 'Unable to load ticket statistics.', requestId: req.requestId });
+  }
+});
+
+app.get('/api/tickets', requireApiAuth, async (req, res) => {
+  try {
+    const requestedStatus = new Set(['open', 'closed']).has(String(req.query.status || '')) ? String(req.query.status) : null;
+    try {
+      const values = ['1531349051998732349'];
+      let query = `
+        SELECT
+          t.*,
+          u.username AS user_username,
+          u.avatar AS user_avatar,
+          assigned.username AS staff_username,
+          assigned.avatar AS staff_avatar,
+          claimed.username AS claimed_by_username,
+          claimed.avatar AS claimed_by_avatar,
+          closed.username AS closed_by_username,
+          closed.avatar AS closed_by_avatar
+        FROM tickets t
+        LEFT JOIN users u ON t.user_id = u.id
+        LEFT JOIN staff assigned ON t.assigned_to = assigned.id
+        LEFT JOIN staff claimed ON t.claimed_by = claimed.id
+        LEFT JOIN staff closed ON t.closed_by = closed.id
+        WHERE (t.status = 'open' OR (t.status = 'closed' AND t.transcript_channel_id = $1))
+      `;
+      if (requestedStatus) {
+        values.push(requestedStatus);
+        query += ' AND t.status = $2';
+      }
+      query += ' ORDER BY t.created_at DESC';
+      const result = await pool.query(query, values);
+      return res.json(result.rows);
+    } catch (primaryError) {
+      console.error('[STABLE TICKETS PRIMARY ERROR]', primaryError);
+      const values = [];
+      let query = 'SELECT t.* FROM tickets t WHERE 1=1';
+      if (requestedStatus) {
+        values.push(requestedStatus);
+        query += ' AND t.status = $1';
+      }
+      query += ' ORDER BY t.created_at DESC';
+      const result = await pool.query(query, values);
+      return res.json(result.rows);
+    }
+  } catch (error) {
+    console.error('[STABLE TICKETS ERROR]', error);
+    return res.status(500).json({ error: 'Unable to load tickets.', requestId: req.requestId });
+  }
+});
+
 app.use('/api', requireApiAuth, requireCsrf, apiRoutes);
 app.use('/api/donation', requireApiAuth, requireCsrf, donationRoutes);
 app.get(['/', '/index.html'], requirePageAuth, (req, res, next) => { if (!pageTemplates?.index) return next(new Error('Panel template is not ready.')); res.setHeader('Cache-Control', 'private, no-store, max-age=0, must-revalidate'); return res.type('html').send(pageTemplates.index); });
