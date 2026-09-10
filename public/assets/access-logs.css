@@ -123,14 +123,20 @@ html[data-theme="light"] .access-filter-bar{background:#f8fafc;}
     #view-dashboard .dashboard-header>.btn{width:100%!important;}
 }
 
-/* Transcript viewer cleanup: no ticket metadata sidebar. */
+/* Transcript viewer cleanup: metadata is intentionally removed from the UI. */
 #view-transcripts .transcript-meta-panel,
-#view-transcripts #transcript-meta-panel{
+#view-transcripts #transcript-meta-panel,
+#view-transcripts .transcript-metadata-panel,
+#view-transcripts #transcript-metadata-panel{
     display:none!important;
+    width:0!important;
+    min-width:0!important;
+    max-width:0!important;
+    padding:0!important;
+    margin:0!important;
+    border:0!important;
 }
-#view-transcripts .transcript-workspace{
-    grid-template-columns:minmax(235px,270px) minmax(0,1fr)!important;
-}
+#view-transcripts .transcript-workspace,
 body.transcript-workspace-active #view-transcripts .transcript-workspace{
     grid-template-columns:minmax(235px,270px) minmax(0,1fr)!important;
 }
