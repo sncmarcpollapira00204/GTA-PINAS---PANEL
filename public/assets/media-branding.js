@@ -13,7 +13,7 @@
     login_banner: {
       title: 'Login Banner',
       description: 'Change the login background.',
-      accept: '.png,.jpg,.jpeg,.webp,.gif,.webm',
+      accept: '.png,.jpg,.jpeg,.webp,.gif,.webm,.mp4',
     },
     login_music: {
       title: 'Login Music',
@@ -239,447 +239,258 @@
   function createPreview(asset) {
     const preview = document.createElement('div');
     preview.className = 'media-preview';
+    const kind = String(asset?.kind || '').toLowerCase();
 
-    let media;
-    if (asset.kind === 'video') {
-      media = document.createElement('video');
-      media.className = 'media-preview-player';
-      media.src = asset.url;
-      media.muted = true;
-      media.loop = true;
-      media.playsInline = true;
-      media.preload = 'metadata';
-      media.disablePictureInPicture = true;
-    } else if (asset.kind === 'audio') {
-      media = document.createElement('audio');
-      media.src = asset.url;
-      media.controls = true;
-      media.preload = 'none';
+    if (kind === 'video') {
+      const video = document.createElement('video');
+      video.className = 'media-preview-player';
+      video.src = asset.url;
+      video.controls = true;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      preview.appendChild(video);
+    } else if (kind === 'audio') {
+      const audio = document.createElement('audio');
+      audio.src = asset.url;
+      audio.controls = true;
+      audio.preload = 'metadata';
+      preview.appendChild(audio);
     } else {
-      media = document.createElement('img');
-      media.src = asset.url;
-      media.alt = '';
-      media.loading = 'lazy';
-      media.decoding = 'async';
+      const img = document.createElement('img');
+      img.src = asset.url;
+      img.alt = `${asset.label || 'Panel'} preview`;
+      img.loading = 'lazy';
+      preview.appendChild(img);
     }
-
-    preview.appendChild(media);
 
     const badge = document.createElement('span');
     badge.className = 'media-preview-badge';
-    badge.textContent = asset.isDefault ? 'Default' : asset.kind;
+    badge.textContent = kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : 'Image';
     preview.appendChild(badge);
     return preview;
   }
 
-  function createMediaCard(slot, asset) {
-    const copy = SLOT_COPY[slot];
-    const card = document.createElement('article');
-    card.className = 'media-settings-card';
-    card.dataset.mediaSlot = slot;
-
-    const title = document.createElement('h3');
-    title.textContent = copy.title;
-    const description = document.createElement('p');
-    description.textContent = copy.description;
-    card.append(title, description, createPreview(asset));
-
-    const meta = document.createElement('div');
-    meta.className = 'media-file-meta';
-    const name = document.createElement('strong');
-    name.style.color = 'var(--text-main)';
-    name.textContent = asset.isDefault ? 'Using the default file' : (asset.originalName || 'Custom file');
-    const details = document.createElement('div');
-    details.textContent = `${formatBytes(asset.sizeBytes)} · Max ${(Number(asset.maxBytes) / 1024 / 1024).toFixed(0)} MB`;
-    meta.append(name, details);
-    card.appendChild(meta);
-
-    const input = document.createElement('input');
-    input.className = 'media-file-picker';
-    input.type = 'file';
-    input.accept = copy.accept;
-    input.setAttribute('aria-label', `Choose ${copy.title}`);
-    card.appendChild(input);
-
-    input.addEventListener('change', () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      if (file.size > Number(asset.maxBytes)) {
-        showToast(`${copy.title} is too large.`, 'error');
-        input.value = '';
-        return;
-      }
-      name.textContent = file.name;
-      details.textContent = `${formatBytes(file.size)} selected`;
-    });
-
-    const actions = document.createElement('div');
-    actions.className = 'media-card-actions';
-
-    const upload = document.createElement('button');
-    upload.type = 'button';
-    upload.className = 'btn btn-primary';
-    upload.innerHTML = '<i data-lucide="upload" size="15"></i> Upload';
-    upload.disabled = Boolean(busySlot);
-    upload.addEventListener('click', () => uploadSlot(slot, input));
-
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.className = 'btn btn-outline';
-    reset.textContent = 'Reset';
-    reset.disabled = asset.isDefault || Boolean(busySlot);
-    reset.addEventListener('click', () => resetSlot(slot));
-
-    actions.append(upload, reset);
-    card.appendChild(actions);
-    return card;
+  function getUploadEndpoint(slot) {
+    return `/api/media/${encodeURIComponent(slot)}`;
   }
 
-  function panelRenderKey() {
-    const slots = settingsPayload?.slots || {};
-    const mediaKey = SLOT_ORDER.map((slot) => slots[slot]?.url || slot).join('|');
-    return `${settingsPayload?.canManage ? 'manager' : 'locked'}|${busySlot || ''}|${mediaKey}`;
-  }
-
-  function renderManagerPanel(panelPane, force = false) {
-    const renderKey = panelRenderKey();
-    if (!force && panelPane.dataset.renderKey === renderKey) {
-      syncPreviewPlayback();
-      return;
-    }
-
-    panelPane.dataset.renderKey = renderKey;
-    panelPane.innerHTML = `
-      <section id="simple-media-branding" class="simple-card">
-        <h2><i data-lucide="image-up" size="17"></i> Panel Design &amp; Music</h2>
-        <p class="media-settings-intro">Change the panel banner, login background, or login music.</p>
-        <div class="media-settings-grid"></div>
-        <div class="media-settings-note">
-          <i data-lucide="save" size="16"></i>
-          <span>Your uploaded files are saved automatically.</span>
-        </div>
-      </section>
-    `;
-
-    const grid = panelPane.querySelector('.media-settings-grid');
-    if (grid && settingsPayload?.slots) {
-      grid.replaceChildren(...SLOT_ORDER.map((slot) => createMediaCard(slot, settingsPayload.slots[slot])));
-    }
-    renderIcons(panelPane);
-    syncPreviewPlayback();
-  }
-
-  function renderLockedPanel(panelPane) {
-    const renderKey = panelRenderKey();
-    if (panelPane.dataset.renderKey === renderKey) return;
-    panelPane.dataset.renderKey = renderKey;
-    panelPane.innerHTML = `
-      <section class="simple-card panel-settings-lock">
-        <div class="panel-settings-lock-inner">
-          <div class="panel-settings-lock-icon"><i data-lucide="lock-keyhole" size="24"></i></div>
-          <h2>Web Panel Settings are locked</h2>
-          <p>Only the Panel Owner, Owner, and Executives can change the panel design and music.</p>
-        </div>
-      </section>
-    `;
-    renderIcons(panelPane);
-  }
-
-  function renderPanelSettingsPane(panelPane, force = false) {
-    if (!settingsPayload || !panelPane) return;
-    if (settingsPayload.canManage) renderManagerPanel(panelPane, force);
-    else renderLockedPanel(panelPane);
-  }
-
-  function savedActiveSection() {
-    try {
-      return sessionStorage.getItem(ACTIVE_SECTION_KEY) === 'panel' ? 'panel' : 'user';
-    } catch (_) {
-      return 'user';
-    }
-  }
-
-  function activateSimpleSection(section) {
-    const normalized = section === 'panel' ? 'panel' : 'user';
-    const switcher = document.getElementById('simple-settings-switcher');
-    const userPane = document.getElementById('simple-user-settings-pane');
-    const panelPane = document.getElementById('simple-web-panel-settings-pane');
-    if (!switcher || !userPane || !panelPane) return;
-
-    switcher.querySelectorAll('[data-simple-settings-section]').forEach((button) => {
-      const active = button.dataset.simpleSettingsSection === normalized;
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-selected', String(active));
-      button.tabIndex = active ? 0 : -1;
-    });
-
-    userPane.hidden = normalized !== 'user';
-    panelPane.hidden = normalized !== 'panel';
-
-    try {
-      sessionStorage.setItem(ACTIVE_SECTION_KEY, normalized);
-    } catch (_) {}
-
-    if (normalized === 'panel') renderPanelSettingsPane(panelPane);
-    window.requestAnimationFrame(syncPreviewPlayback);
-  }
-
-  function installSimpleSettingsView() {
-    const settingsView = document.getElementById('view-settings');
-    const simplePage = settingsView?.querySelector('.simple-page');
-    const settingsGrid = simplePage?.querySelector('.simple-settings-grid');
-    const pageHeader = simplePage?.querySelector(':scope > .page-header');
-    if (!simplePage || !settingsGrid || !pageHeader || !settingsPayload) return false;
-
-    let switcher = simplePage.querySelector('#simple-settings-switcher');
-    if (!switcher) {
-      switcher = document.createElement('div');
-      switcher.id = 'simple-settings-switcher';
-      switcher.className = 'simple-settings-switcher';
-      switcher.setAttribute('role', 'tablist');
-      switcher.setAttribute('aria-label', 'Settings sections');
-      switcher.innerHTML = `
-        <button type="button" role="tab" data-simple-settings-section="user">
-          <i data-lucide="user-cog" size="16"></i> User Settings
-        </button>
-        <button type="button" role="tab" data-simple-settings-section="panel">
-          <i data-lucide="panel-top" size="16"></i> Web Panel Settings
-        </button>
-      `;
-      pageHeader.insertAdjacentElement('afterend', switcher);
-    }
-
-    let userPane = simplePage.querySelector('#simple-user-settings-pane');
-    if (!userPane) {
-      userPane = document.createElement('div');
-      userPane.id = 'simple-user-settings-pane';
-      userPane.className = 'simple-settings-pane';
-      userPane.setAttribute('role', 'tabpanel');
-      settingsGrid.insertAdjacentElement('beforebegin', userPane);
-      userPane.appendChild(settingsGrid);
-    }
-
-    let panelPane = simplePage.querySelector('#simple-web-panel-settings-pane');
-    if (!panelPane) {
-      panelPane = document.createElement('div');
-      panelPane.id = 'simple-web-panel-settings-pane';
-      panelPane.className = 'simple-settings-pane';
-      panelPane.setAttribute('role', 'tabpanel');
-      userPane.insertAdjacentElement('afterend', panelPane);
-    }
-
-    switcher.querySelectorAll('[data-simple-settings-section]').forEach((button) => {
-      if (button.dataset.settingsBound === '1') return;
-      button.dataset.settingsBound = '1';
-      button.addEventListener('click', () => activateSimpleSection(button.dataset.simpleSettingsSection));
-    });
-
-    activateSimpleSection(savedActiveSection());
-    renderIcons(switcher);
-    return true;
-  }
-
-  function installLegacySettingsView() {
-    const nav = document.querySelector('.settings-section-nav');
-    const stage = document.querySelector('.settings-stage');
-    if (!nav || !stage || !settingsPayload) return false;
-
-    let button = nav.querySelector('[data-settings-tab="media-branding"]');
-    if (!button) {
-      button = document.createElement('button');
-      button.className = 'settings-tab-btn';
-      button.type = 'button';
-      button.dataset.settingsTab = 'media-branding';
-      button.innerHTML = '<i data-lucide="panel-top"></i><span>Web Panel Settings</span>';
-      nav.appendChild(button);
-    }
-
-    let view = stage.querySelector('[data-settings-view="media-branding"]');
-    if (!view) {
-      view = document.createElement('div');
-      view.className = 'settings-view';
-      view.dataset.settingsView = 'media-branding';
-      stage.appendChild(view);
-    }
-
-    if (button.dataset.mediaBound !== '1') {
-      button.dataset.mediaBound = '1';
-      button.addEventListener('click', (event) => {
-        event.preventDefault();
-        document.querySelectorAll('.settings-tab-btn').forEach((item) => item.classList.remove('active'));
-        document.querySelectorAll('.settings-view').forEach((item) => item.classList.remove('active'));
-        button.classList.add('active');
-        view.classList.add('active');
-        renderPanelSettingsPane(view);
-        window.requestAnimationFrame(syncPreviewPlayback);
-      });
-    }
-
-    renderIcons(document.getElementById('view-settings') || document);
-    return true;
-  }
-
-  function installSettingsView() {
-    if (!settingsPayload) return;
-    if (installSimpleSettingsView()) return;
-    installLegacySettingsView();
-  }
-
-  function loadManagerSettings() {
-    if (settingsPayload) return Promise.resolve(settingsPayload);
-    if (settingsPromise) return settingsPromise;
-
-    settingsPromise = Promise.all([
-      fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' }),
-      fetch('/api/media/settings', { cache: 'no-store', credentials: 'same-origin' }),
-    ])
-      .then(async ([authResponse, settingsResponse]) => {
-        if (!authResponse.ok || !settingsResponse.ok) {
-          throw new Error('Unable to load Web Panel Settings.');
-        }
-        const [authPayload, payload] = await Promise.all([
-          authResponse.json(),
-          settingsResponse.json(),
-        ]);
-        csrfToken = String(authPayload.csrfToken || '');
-        settingsPayload = payload;
-        return payload;
-      })
-      .catch((error) => {
-        console.warn('[MEDIA SETTINGS]', error.message || error);
-        return null;
-      })
-      .finally(() => {
-        settingsPromise = null;
-      });
-
-    return settingsPromise;
-  }
-
-  async function ensureSettingsUi() {
-    settingsRequested = true;
-    await loadManagerSettings();
-    installSettingsView();
-    observeSettingsView();
-  }
-
-  function refreshPanelSettings() {
-    const panelPane = document.getElementById('simple-web-panel-settings-pane');
-    if (panelPane && !panelPane.hidden) renderPanelSettingsPane(panelPane, true);
-    else if (panelPane) panelPane.dataset.renderKey = '';
-  }
-
-  async function uploadSlot(slot, input) {
-    const file = input.files?.[0];
-    if (!file) {
-      showToast('Choose a file first.', 'error');
-      return;
-    }
-    if (!settingsPayload?.canManage || !csrfToken || busySlot) return;
-
+  async function uploadSlot(slot, file) {
+    if (!file) return;
     busySlot = slot;
-    refreshPanelSettings();
+    renderSettings();
 
     try {
-      const response = await fetch(`/api/media/${encodeURIComponent(slot)}`, {
+      const response = await fetch(getUploadEndpoint(slot), {
         method: 'PUT',
         credentials: 'same-origin',
         headers: {
-          'Content-Type': file.type || 'application/octet-stream',
-          'X-File-Name': encodeURIComponent(file.name),
           'X-CSRF-Token': csrfToken,
+          'X-File-Name': encodeURIComponent(file.name),
+          'Content-Type': file.type || 'application/octet-stream',
         },
         body: file,
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || 'Upload failed.');
-
-      settingsPayload.slots[slot] = payload.asset;
+      if (!response.ok) throw new Error(payload.error || `Upload failed (${response.status}).`);
       updatePublicAsset(slot, payload.asset);
-      showToast(`${SLOT_COPY[slot].title} updated.`);
+      settingsPayload.slots[slot] = payload.asset;
+      showToast(payload.message || `${SLOT_COPY[slot].title} updated.`, 'success');
     } catch (error) {
-      showToast(error.message, 'error');
+      console.error('[MEDIA UPLOAD]', error);
+      showToast(error.message || 'Unable to upload media.', 'error');
     } finally {
       busySlot = null;
-      refreshPanelSettings();
+      renderSettings();
     }
   }
 
   async function resetSlot(slot) {
-    if (!settingsPayload?.canManage || !csrfToken || busySlot) return;
-
     busySlot = slot;
-    refreshPanelSettings();
-
+    renderSettings();
     try {
-      const response = await fetch(`/api/media/${encodeURIComponent(slot)}`, {
+      const response = await fetch(getUploadEndpoint(slot), {
         method: 'DELETE',
         credentials: 'same-origin',
         headers: { 'X-CSRF-Token': csrfToken },
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || 'Reset failed.');
-
-      settingsPayload.slots[slot] = payload.asset;
+      if (!response.ok) throw new Error(payload.error || `Reset failed (${response.status}).`);
       updatePublicAsset(slot, payload.asset);
-      showToast(`${SLOT_COPY[slot].title} reset.`);
+      settingsPayload.slots[slot] = payload.asset;
+      showToast(payload.message || `${SLOT_COPY[slot].title} reset.`, 'success');
     } catch (error) {
-      showToast(error.message, 'error');
+      console.error('[MEDIA RESET]', error);
+      showToast(error.message || 'Unable to reset media.', 'error');
     } finally {
       busySlot = null;
-      refreshPanelSettings();
+      renderSettings();
     }
   }
 
-  function observeSettingsView() {
-    const view = document.getElementById('view-settings');
-    if (!view || settingsObserver) return;
+  function renderMediaCard(slot) {
+    const config = SLOT_COPY[slot];
+    const asset = settingsPayload?.slots?.[slot];
+    const card = document.createElement('article');
+    card.className = 'media-settings-card';
 
-    let scheduled = false;
-    settingsObserver = new MutationObserver(() => {
-      if (!settingsRequested || !settingsPayload || scheduled) return;
-      const simplePage = view.querySelector('.simple-page');
-      if (!simplePage || simplePage.querySelector('#simple-settings-switcher')) return;
-      scheduled = true;
-      window.requestAnimationFrame(() => {
-        scheduled = false;
-        installSettingsView();
-      });
+    const heading = document.createElement('h3');
+    heading.textContent = config.title;
+    card.appendChild(heading);
+
+    const description = document.createElement('p');
+    description.textContent = config.description;
+    card.appendChild(description);
+
+    if (asset?.url) card.appendChild(createPreview(asset));
+
+    const meta = document.createElement('div');
+    meta.className = 'media-file-meta';
+    meta.textContent = asset?.isDefault
+      ? `Default • up to ${formatBytes(asset.maxBytes)}`
+      : `${asset.originalName || 'Custom upload'} • ${formatBytes(asset.sizeBytes)}`;
+    card.appendChild(meta);
+
+    const picker = document.createElement('input');
+    picker.className = 'media-file-picker';
+    picker.type = 'file';
+    picker.accept = config.accept;
+    picker.disabled = busySlot !== null;
+    picker.addEventListener('change', () => {
+      const file = picker.files?.[0];
+      picker.value = '';
+      if (file) void uploadSlot(slot, file);
     });
-    settingsObserver.observe(view, { childList: true, subtree: true });
+    card.appendChild(picker);
+
+    const actions = document.createElement('div');
+    actions.className = 'media-card-actions';
+
+    const replaceButton = document.createElement('button');
+    replaceButton.className = 'btn primary';
+    replaceButton.type = 'button';
+    replaceButton.textContent = busySlot === slot ? 'Uploading...' : 'Upload / Replace';
+    replaceButton.disabled = busySlot !== null;
+    replaceButton.addEventListener('click', () => picker.click());
+    actions.appendChild(replaceButton);
+
+    const resetButton = document.createElement('button');
+    resetButton.className = 'btn secondary';
+    resetButton.type = 'button';
+    resetButton.textContent = 'Reset';
+    resetButton.disabled = busySlot !== null || Boolean(asset?.isDefault);
+    resetButton.addEventListener('click', () => void resetSlot(slot));
+    actions.appendChild(resetButton);
+
+    card.appendChild(actions);
+    return card;
   }
 
-  function handleNavigationClick(event) {
-    const item = event.target.closest('.nav-item[data-target]');
-    if (!item) return;
+  function renderSettings() {
+    const container = document.getElementById('simple-media-branding');
+    if (!container) return;
+    container.innerHTML = '';
 
-    if (item.dataset.target === 'view-settings') {
-      window.setTimeout(() => void ensureSettingsUi(), 0);
+    const heading = document.createElement('h2');
+    heading.innerHTML = '<i data-lucide="image"></i> Web Media';
+    container.appendChild(heading);
+
+    const intro = document.createElement('p');
+    intro.className = 'media-settings-intro';
+    intro.textContent = 'Manage the dashboard banner, login background, and login music. MP4 video is supported for the login background.';
+    container.appendChild(intro);
+
+    if (!settingsPayload) {
+      const loading = document.createElement('div');
+      loading.className = 'panel-settings-lock';
+      loading.innerHTML = '<div class="panel-settings-lock-inner"><div class="panel-settings-lock-icon"><i data-lucide="loader-circle"></i></div><h2>Loading media settings</h2><p>Fetching the latest panel media configuration.</p></div>';
+      container.appendChild(loading);
+      renderIcons(container);
+      return;
     }
-    window.requestAnimationFrame(() => {
-      syncDashboardPlayback();
-      syncPreviewPlayback();
+
+    const grid = document.createElement('div');
+    grid.className = 'media-settings-grid';
+    SLOT_ORDER.forEach((slot) => grid.appendChild(renderMediaCard(slot)));
+    container.appendChild(grid);
+
+    const note = document.createElement('div');
+    note.className = 'media-settings-note';
+    note.innerHTML = '<i data-lucide="info"></i><span>Large media files are stored through the panel media service so they do not need to be bundled into the HTML.</span>';
+    container.appendChild(note);
+    renderIcons(container);
+    syncPreviewPlayback();
+  }
+
+  async function loadSettings() {
+    if (settingsPromise) return settingsPromise;
+    settingsPromise = fetch('/api/media/settings', {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Media settings returned ${response.status}.`);
+        return response.json();
+      })
+      .then((payload) => {
+        settingsPayload = payload;
+        csrfToken = payload.csrfToken || '';
+        renderSettings();
+        return payload;
+      })
+      .catch((error) => {
+        console.error('[MEDIA SETTINGS]', error);
+        settingsPayload = null;
+        renderSettings();
+        showToast(error.message || 'Unable to load media settings.', 'error');
+        return null;
+      })
+      .finally(() => {
+        settingsRequested = true;
+      });
+
+    return settingsPromise;
+  }
+
+  function ensureMediaContainer() {
+    let container = document.getElementById('simple-media-branding');
+    if (container) return container;
+
+    const panelPane = document.getElementById('simple-web-panel-settings-pane');
+    if (!panelPane) return null;
+    container = document.createElement('section');
+    container.id = 'simple-media-branding';
+    container.className = 'settings-card';
+    panelPane.appendChild(container);
+    return container;
+  }
+
+  function refreshVisibility() {
+    const container = ensureMediaContainer();
+    if (!container) return;
+    container.hidden = !isPanelSettingsVisible();
+    if (!container.hidden && !settingsRequested) void loadSettings();
+    syncPreviewPlayback();
+  }
+
+  function observePanelSettings() {
+    if (settingsObserver) return;
+    settingsObserver = new MutationObserver(refreshVisibility);
+    settingsObserver.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['class', 'hidden'],
     });
   }
 
   function init() {
     installStyles();
+    ensureMediaContainer();
+    observePanelSettings();
+    refreshVisibility();
     void loadPublicMedia();
-
-    document.addEventListener('click', handleNavigationClick);
-    document.addEventListener('visibilitychange', () => {
-      syncDashboardPlayback();
-      syncPreviewPlayback();
-    });
-    window.addEventListener('pagehide', () => {
-      dashboardVideo?.pause();
-      document.querySelectorAll('#simple-web-panel-settings-pane audio, #simple-web-panel-settings-pane video')
-        .forEach((media) => media.pause());
-    });
-
-    if (isViewActive(document.getElementById('view-settings'))) {
-      void ensureSettingsUi();
-    }
   }
 
   if (document.readyState === 'loading') {
