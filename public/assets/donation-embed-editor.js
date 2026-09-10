@@ -19,9 +19,10 @@
         style.textContent = `
             #view-donation-embed-editor .dee-shell{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:20px;max-width:1200px}
             #view-donation-embed-editor .dee-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:20px}
-            #view-donation-embed-editor .dee-link-box{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:8px;align-items:end;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+            #view-donation-embed-editor .dee-link-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
             #view-donation-embed-editor .dee-link-box .dee-field{min-width:0}
-            #view-donation-embed-editor .dee-link-box .btn{width:112px;min-width:112px;height:36px;min-height:36px;padding:0 12px;justify-content:center;align-items:center;white-space:nowrap}
+            #view-donation-embed-editor .dee-link-box .btn{align-self:end;width:108px;min-width:108px;height:36px;min-height:36px;box-sizing:border-box;padding:0 10px;justify-content:center;align-items:center;white-space:nowrap;margin:0}
+            #view-donation-embed-editor .dee-link-box .dee-field input{height:36px}
             #view-donation-embed-editor .dee-linked{font-size:9px;color:var(--success);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
             #view-donation-embed-editor .dee-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
             #view-donation-embed-editor .dee-field{display:flex;flex-direction:column;gap:6px}
@@ -131,157 +132,119 @@
             if (/^#{1,3}\s+/.test(trimmed)) return `<div class="discord-heading">${formatInline(trimmed.replace(/^#{1,3}\s+/, ''))}</div>`;
             if (/^[-*]\s+/.test(trimmed)) return `<ul class="discord-list"><li>${formatInline(trimmed.replace(/^[-*]\s+/, ''))}</li></ul>`;
             if (/^>\s?/.test(trimmed)) return `<div class="discord-quote">${formatInline(trimmed.replace(/^>\s?/, ''))}</div>`;
-            return formatInline(line);
-        }).join('<br>');
+            return line ? formatInline(line) : '<br>';
+        }).join('\n');
     }
 
     function renderPreview() {
-        const target = document.getElementById('dee-preview'); if (!target) return;
         const data = formData();
-        const avatar = (data.author || '5A').slice(0, 2).toUpperCase();
-        const author = esc(data.author || 'GTA Pinas Treasury');
-        const footer = esc(data.footer || '');
-        const title = esc(data.title || '');
-        const description = formatDescription(data.description || 'Start typing to preview your message.');
-        const color = /^#[0-9a-fA-F]{6}$/.test(data.color) ? data.color : '#5865f2';
-        target.innerHTML = `
-            <div class="dee-discord-user"><div class="dee-discord-avatar">${avatar}</div><div><strong>GTA Pinas Treasury</strong><span>Today at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div></div>
-            <div class="dee-embed ${data.thumbnail ? 'has-thumbnail' : ''}" style="border-left-color:${color}">
-                ${data.thumbnail ? `<img class="dee-embed-thumbnail" src="${esc(safeUrl(data.thumbnail))}" alt="">` : ''}
-                <div class="dee-embed-main">
-                    ${author ? `<div class="dee-embed-author">${author}</div>` : ''}
-                    ${title ? `<div class="dee-embed-title">${title}</div>` : ''}
-                    <div class="dee-embed-description">${description}</div>
-                    ${data.image ? `<img class="dee-embed-image" src="${esc(safeUrl(data.image))}" alt="">` : ''}
-                    ${footer ? `<div class="dee-embed-footer">${footer}</div>` : ''}
+        const color = /^#[0-9A-F]{6}$/i.test(data.color) ? data.color : '#5865F2';
+        const image = safeUrl(data.image); const thumbnail = safeUrl(data.thumbnail);
+        const preview = document.getElementById('dee-preview'); if (!preview) return;
+        preview.innerHTML = `
+            <div class="dee-discord-user"><div class="dee-discord-avatar">5A</div><div><strong>GTA Pinas Treasury</strong><span>Today at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div></div>
+            <div class="dee-embed" style="border-left-color:${esc(color)}${thumbnail ? ';' : ''} ${thumbnail ? '' : ''}">
+                ${thumbnail ? `<img class="dee-embed-thumbnail" src="${esc(thumbnail)}" alt="">` : ''}
+                <div class="dee-embed-main${thumbnail ? ' has-thumbnail' : ''}">
+                    ${data.author ? `<div class="dee-embed-author">${esc(data.author)}</div>` : ''}
+                    ${data.title ? `<div class="dee-embed-title">${esc(data.title)}</div>` : ''}
+                    ${data.description ? `<div class="dee-embed-description">${formatDescription(data.description)}</div>` : '<div class="dee-embed-description" style="color:#949ba4">Start typing to preview your message.</div>'}
+                    ${image ? `<img class="dee-embed-image" src="${esc(image)}" alt="">` : ''}
+                    ${data.footer ? `<div class="dee-embed-footer">${esc(data.footer)}</div>` : ''}
                 </div>
             </div>`;
     }
 
     function bindLivePreview() {
-        ['dee-title','dee-color','dee-description','dee-image','dee-thumbnail','dee-author','dee-footer'].forEach((id) => document.getElementById(id)?.addEventListener('input', renderPreview));
+        ['dee-title','dee-description','dee-color','dee-image','dee-thumbnail','dee-author','dee-footer'].forEach((id) => document.getElementById(id)?.addEventListener('input', renderPreview));
         renderPreview();
     }
 
     function bindToolbar() {
-        const area = document.getElementById('dee-description');
         document.querySelectorAll('#view-donation-embed-editor [data-format]').forEach((button) => button.addEventListener('click', () => applyFormat(button.dataset.format)));
-        if (!state.shortcutBound) {
-            state.shortcutBound = true;
-            document.addEventListener('keydown', (event) => {
-                if (!document.getElementById('view-donation-embed-editor')?.classList.contains('active') || document.activeElement !== area) return;
-                if (!event.ctrlKey && !event.metaKey) return;
-                const map = { b: 'bold', i: 'italic', u: 'underline', s: 'strike', e: 'code' };
-                if (map[event.key.toLowerCase()]) { event.preventDefault(); applyFormat(map[event.key.toLowerCase()]); }
-            });
-        }
+        if (state.shortcutBound) return; state.shortcutBound = true;
+        document.addEventListener('keydown', (event) => {
+            if (!(event.ctrlKey || event.metaKey)) return;
+            const key = event.key.toLowerCase(); const map = { b: 'bold', i: 'italic', u: 'underline', s: 'strike', e: 'code' }; if (map[key]) { event.preventDefault(); applyFormat(map[key]); }
+        });
     }
 
     function applyFormat(format) {
-        const area = document.getElementById('dee-description'); if (!area) return;
-        const start = area.selectionStart, end = area.selectionEnd, selected = area.value.slice(start, end);
-        const pairs = { bold:['**','**'], italic:['*','*'], underline:['__','__'], strike:['~~','~~'], code:['`','`'], spoiler:['||','||'], quote:['> ',''], link:['[','](https://)'] };
-        const pair = pairs[format]; if (!pair) return;
-        const replacement = `${pair[0]}${selected || (format === 'link' ? 'link text' : 'text')}${pair[1]}`;
-        area.setRangeText(replacement, start, end, 'select'); area.dispatchEvent(new Event('input', { bubbles:true })); area.focus();
-    }
-
-    async function getJson(url, options = {}) {
-        const response = await fetch(url, { credentials:'same-origin', ...options, headers:{ 'Content-Type':'application/json', ...(options.headers || {}) } });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.error || body.message || `Request failed (${response.status})`);
-        return body;
-    }
-
-    function setStatus(message, type = '') {
-        const status = document.getElementById('dee-status');
-        if (status) { status.textContent = message || ''; status.className = `dee-status ${type}`.trim(); }
+        const field = document.getElementById('dee-description'); if (!field) return;
+        const start = field.selectionStart || 0; const end = field.selectionEnd || 0; const selected = field.value.slice(start, end); if (!selected && format !== 'link') return;
+        const wrappers = { bold: ['**','**'], italic: ['*','*'], underline: ['__','__'], strike: ['~~','~~'], code: ['`','`'], spoiler: ['||','||'], quote: ['> ',''] };
+        let replacement = selected;
+        if (format === 'link') { const url = window.prompt('Enter URL'); if (!url) return; replacement = `[${selected}](${safeUrl(url) || url})`; }
+        else if (wrappers[format]) replacement = `${wrappers[format][0]}${selected}${wrappers[format][1]}`;
+        field.setRangeText(replacement, start, end, 'select'); field.dispatchEvent(new Event('input', { bubbles: true })); field.focus();
     }
 
     async function loadChannels() {
+        const select = document.getElementById('dee-channel'); if (!select) return;
         try {
-            const data = await getJson('/api/donation/channels');
-            const select = document.getElementById('dee-channel');
-            if (!select) return;
-            const channels = Array.isArray(data.channels) ? data.channels : [];
-            state.channels = channels;
-            select.innerHTML = channels.length ? channels.map((channel) => `<option value="${esc(channel.id)}">${esc(channel.name || channel.id)}</option>`).join('') : '<option value="">No donation channels configured</option>';
-        } catch (error) { setStatus(error.message, 'error'); }
+            const response = await fetch('/api/donation/channels'); const payload = await response.json(); if (!response.ok) throw new Error(payload?.message || 'Failed to load channels');
+            state.channels = Array.isArray(payload.channels) ? payload.channels : []; select.innerHTML = state.channels.length ? state.channels.map((channel) => `<option value="${esc(channel.id)}">${esc(channel.name || channel.id)}</option>`).join('') : '<option value="">No donation channels configured</option>';
+            state.initialized = true;
+        } catch (error) { select.innerHTML = '<option value="">Unable to load channels</option>'; setStatus(error.message, 'error'); }
     }
 
-    function fillEmbed(embed) {
-        document.getElementById('dee-title').value = embed.title || '';
-        document.getElementById('dee-description').value = embed.description || '';
-        document.getElementById('dee-color').value = embed.colorHex || '#2563EB';
-        document.getElementById('dee-image').value = embed.image?.url || '';
-        document.getElementById('dee-thumbnail').value = embed.thumbnail?.url || '';
-        document.getElementById('dee-author').value = embed.author?.name || '';
-        document.getElementById('dee-footer').value = embed.footer?.text || '';
+    function setStatus(message, type = '') { const status = document.getElementById('dee-status'); if (!status) return; status.textContent = message || ''; status.className = `dee-status${type ? ` ${type}` : ''}`; }
+
+    function fill(data) {
+        const embed = data?.embed || data || {};
+        const fields = { title: embed.title || '', description: embed.description || '', color: embed.color ? `#${Number(embed.color).toString(16).padStart(6,'0').toUpperCase()}` : '#2563EB', image: embed.image?.url || '', thumbnail: embed.thumbnail?.url || '', author: embed.author?.name || '', footer: embed.footer?.text || '' };
+        Object.entries(fields).forEach(([key, value]) => { const input = document.getElementById(`dee-${key}`); if (input) input.value = value; });
+        state.preserve = { fields: Array.isArray(embed.fields) ? embed.fields : [], url: embed.url || '', timestamp: embed.timestamp || null };
         renderPreview();
     }
 
     async function loadExisting() {
-        const input = document.getElementById('dee-message-url');
-        const button = document.getElementById('dee-load-button');
-        const linked = document.getElementById('dee-linked');
-        const updateButton = document.getElementById('dee-update-button');
-        const url = String(input?.value || '').trim();
+        const input = document.getElementById('dee-message-url'); const url = String(input?.value || '').trim();
         if (!url) return setStatus('Paste a Discord message link first.', 'error');
+        setStatus('Loading embed...');
         try {
-            button.disabled = true; button.textContent = 'Loading...'; setStatus('');
-            const data = await getJson(`/api/donation/message?url=${encodeURIComponent(url)}`);
-            fillEmbed(data.embed || {});
-            state.linkedMessageUrl = data.message?.url || url;
-            state.preserve = { fields: data.embed?.fields || [], url: data.embed?.url || null, timestamp: data.embed?.timestamp || null };
-            linked.textContent = data.message ? `Linked: ${data.message.channelName || data.message.channelId} • ${data.message.id}` : `Linked: ${url}`;
-            updateButton.classList.add('visible');
-            const select = document.getElementById('dee-channel');
-            if (data.message?.channelId && state.channels.some((channel) => String(channel.id) === String(data.message.channelId))) select.value = data.message.channelId;
-            setStatus('Existing embed loaded. You can edit and update it.', 'success');
+            const response = await fetch(`/api/donation/message?url=${encodeURIComponent(url)}`); const payload = await response.json(); if (!response.ok) throw new Error(payload?.message || 'Failed to load embed');
+            fill(payload);
+            state.linkedMessageUrl = url;
+            const linked = document.getElementById('dee-linked'); if (linked) linked.textContent = payload?.channel?.name ? `Linked: #${payload.channel.name}` : 'Existing message linked';
+            document.getElementById('dee-update-button')?.classList.add('visible'); setStatus('Embed loaded. You can now edit and update it.', 'success');
+            if (payload?.channel?.id && state.channels.some((channel) => String(channel.id) === String(payload.channel.id))) document.getElementById('dee-channel').value = payload.channel.id;
         } catch (error) { setStatus(error.message, 'error'); }
-        finally { button.disabled = false; button.textContent = 'Load Embed'; }
     }
 
     async function send() {
-        const channelId = document.getElementById('dee-channel')?.value;
-        if (!channelId) return setStatus('Select a donation channel first.', 'error');
-        try { setStatus('Sending...'); await getJson('/api/donation/embed', { method:'POST', body:JSON.stringify({ channelId, embed:formData() }) }); setStatus('Embed sent successfully.', 'success'); }
-        catch (error) { setStatus(error.message, 'error'); }
+        const channelId = document.getElementById('dee-channel')?.value; if (!channelId) return setStatus('Select a donation channel first.', 'error');
+        setStatus('Sending embed...');
+        try {
+            const response = await fetch('/api/donation/embed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channelId, embed: formData() }) });
+            const payload = await response.json(); if (!response.ok) throw new Error(payload?.message || 'Failed to send embed'); setStatus('Embed sent successfully.', 'success');
+        } catch (error) { setStatus(error.message, 'error'); }
     }
 
     async function updateExisting() {
         if (!state.linkedMessageUrl) return setStatus('Load an existing Discord message first.', 'error');
-        const button = document.getElementById('dee-update-button');
-        try { button.disabled = true; setStatus('Updating...'); await getJson('/api/donation/message', { method:'PATCH', body:JSON.stringify({ messageUrl:state.linkedMessageUrl, embed:formData(), preserve:state.preserve }) }); setStatus('Existing embed updated successfully.', 'success'); }
-        catch (error) { setStatus(error.message, 'error'); }
-        finally { button.disabled = false; }
+        setStatus('Updating existing embed...');
+        try {
+            const response = await fetch('/api/donation/message', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageUrl: state.linkedMessageUrl, embed: formData(), preserve: state.preserve }) });
+            const payload = await response.json(); if (!response.ok) throw new Error(payload?.message || 'Failed to update embed'); setStatus('Existing embed updated successfully.', 'success');
+        } catch (error) { setStatus(error.message, 'error'); }
     }
 
     function reset() {
-        ['dee-message-url','dee-title','dee-description','dee-image','dee-thumbnail'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
-        document.getElementById('dee-color').value = '#2563EB';
-        document.getElementById('dee-author').value = '';
-        document.getElementById('dee-footer').value = '';
-        document.getElementById('dee-linked').textContent = '';
-        document.getElementById('dee-update-button').classList.remove('visible');
         state.linkedMessageUrl = ''; state.preserve = {};
-        setStatus(''); renderPreview();
+        ['dee-message-url','dee-title','dee-description','dee-image','dee-thumbnail'].forEach((id) => { const field = document.getElementById(id); if (field) field.value = ''; });
+        const color = document.getElementById('dee-color'); if (color) color.value = '#2563EB';
+        ['dee-author','dee-footer'].forEach((id) => { const field = document.getElementById(id); if (field) field.value = ''; });
+        const linked = document.getElementById('dee-linked'); if (linked) linked.textContent = '';
+        document.getElementById('dee-update-button')?.classList.remove('visible'); setStatus(''); renderPreview();
     }
 
     function openEditor() {
-        buildView(); injectStyles(); buildSidebarItem();
-        document.querySelectorAll('.view-section').forEach((section) => section.classList.remove('active'));
-        document.getElementById('view-donation-embed-editor')?.classList.add('active');
-        document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.target === 'view-donation-embed-editor'));
-        if (!state.initialized) { state.initialized = true; loadChannels(); }
-        renderPreview();
-        if (window.lucide?.createIcons) window.lucide.createIcons();
+        buildView(); injectStyles(); loadChannels(); const section = document.getElementById('view-donation-embed-editor'); if (section) section.classList.add('active');
+        if (window.lucide) window.lucide.createIcons();
     }
 
-    function boot() {
-        injectStyles(); buildView(); buildSidebarItem();
-        document.addEventListener('click', (event) => { const target = event.target.closest('[data-target="view-donation-embed-editor"]'); if (target) { event.preventDefault(); openEditor(); } });
-    }
+    function init() { injectStyles(); buildSidebarItem(); buildView(); openEditor(); }
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();
