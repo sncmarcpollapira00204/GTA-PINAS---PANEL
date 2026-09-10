@@ -3,7 +3,7 @@
 (() => {
   let mediaPromise = null;
 
-  document.title = 'GTA Pinas Roleplay Panel';
+  document.title = 'GTA Pinas Roleplay Management Panel';
 
   function removeLoginBackground() {
     document.querySelector('.login-background')?.remove();
@@ -19,11 +19,26 @@
       img.removeAttribute('srcset');
     });
 
+    document.querySelectorAll('.brand h1').forEach((element) => {
+      element.textContent = 'GTA Pinas Roleplay';
+    });
+
+    document.querySelectorAll('.access-note').forEach((element) => {
+      element.textContent = 'GTA Pinas Roleplay Management Panel';
+    });
+
+    document.querySelectorAll('.maintained').forEach((element) => {
+      element.textContent = 'Manage by Zoey';
+    });
+
     const replacements = [
       ['5th Avenue Roleplay', 'GTA Pinas Roleplay'],
       ['5th Avenue Web Panel', 'GTA Pinas Web Panel'],
+      ['5th Avenue Web Panel', 'GTA Pinas Roleplay Management Panel'],
       ['5TH AVENUE ROLEPLAY', 'GTA PINAS ROLEPLAY'],
       ['5TH AVENUE', 'GTA PINAS'],
+      ['5th Avenue × University registered staff only.', 'GTA Pinas Roleplay Management Panel'],
+      ['Maintained by Yuu - Rora', 'Manage by Zoey'],
     ];
 
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
