@@ -182,12 +182,8 @@ exports.getTicketById = async (req, res) => {
         m.id,
         m.ticket_id,
         m.user_id,
-        CASE
-          WHEN LOWER(TRIM(COALESCE(m.username, ''))) IN ('user', 'unknown user', 'archived user', 'discord user')
-            THEN COALESCE(NULLIF(TRIM(message_user.username), ''), NULLIF(TRIM(author_staff.username), ''), m.username)
-          ELSE COALESCE(NULLIF(TRIM(m.username), ''), NULLIF(TRIM(message_user.username), ''), NULLIF(TRIM(author_staff.username), ''), 'Unknown User')
-        END AS username,
-        COALESCE(NULLIF(TRIM(m.avatar), ''), NULLIF(TRIM(message_user.avatar), ''), NULLIF(TRIM(author_staff.avatar), '')) AS avatar,
+        m.username,
+        m.avatar,
         m.content,
         m.is_embed,
         m.is_bot,
@@ -200,6 +196,10 @@ exports.getTicketById = async (req, res) => {
           ELSE 'participant'
         END AS author_role,
         author_staff.role AS author_staff_role,
+        author_staff.username AS author_staff_username,
+        author_staff.avatar AS author_staff_avatar,
+        message_user.username AS message_user_username,
+        message_user.avatar AS message_user_avatar,
         COALESCE(attachment_data.attachments, '[]'::json) AS attachments
       FROM ticket_messages m
       JOIN tickets ticket ON ticket.id = m.ticket_id
@@ -211,10 +211,49 @@ exports.getTicketById = async (req, res) => {
       ) attachment_data ON TRUE
       WHERE m.ticket_id = $1 ORDER BY m.created_at ASC`, [ticketId]);
 
+    const ticket = ticketResult.rows[0];
+    const placeholderNames = new Set(['user', 'unknown user', 'archived user', 'discord user']);
+    const messages = messagesResult.rows.map((message) => {
+      const storedName = String(message.username || '').trim();
+      const storedKey = storedName.toLowerCase();
+      let embeddedName = '';
+
+      // Imported Discord messages may carry the real display name inside the
+      // compact 5A_MSG_V2 payload even when the legacy username column is "User".
+      if (/^5A_MSG_V2:/i.test(String(message.content || ''))) {
+        try {
+          const payload = JSON.parse(String(message.content).slice(9));
+          embeddedName = String(payload?.displayName || payload?.username || '').trim();
+        } catch {
+          // Keep the database identity fallbacks below when the payload is not JSON.
+        }
+      }
+
+      const username = placeholderNames.has(storedKey)
+        ? (String(message.message_user_username || '').trim() ||
+           String(message.author_staff_username || '').trim() ||
+           embeddedName ||
+           (String(message.user_id || '') === String(ticket.user_id || '') ? String(ticket.user_username || '').trim() : '') ||
+           storedName ||
+           'Unknown User')
+        : (storedName ||
+           String(message.message_user_username || '').trim() ||
+           String(message.author_staff_username || '').trim() ||
+           embeddedName ||
+           'Unknown User');
+
+      const avatar = String(message.avatar || '').trim() ||
+        String(message.message_user_avatar || '').trim() ||
+        String(message.author_staff_avatar || '').trim() ||
+        (String(message.user_id || '') === String(ticket.user_id || '') ? String(ticket.user_avatar || '').trim() : '');
+
+      return { ...message, username, avatar };
+    });
+
     const logsResult = await pool.query(`SELECT id, ticket_id, action, actor_id, description, metadata, created_at FROM ticket_logs WHERE ticket_id = $1 ORDER BY created_at ASC`, [ticketId]);
     const transcriptResult = await pool.query(`SELECT id, ticket_id, discord_url, log_channel_id, log_message_id, generated_at, LENGTH(COALESCE(html_content, ''))::INTEGER AS html_size FROM ticket_transcripts WHERE ticket_id = $1 ORDER BY generated_at DESC LIMIT 1`, [ticketId]);
 
-    return res.json({ ticket: ticketResult.rows[0], messages: messagesResult.rows, logs: logsResult.rows, transcript: transcriptResult.rows[0] || null });
+    return res.json({ ticket, messages, logs: logsResult.rows, transcript: transcriptResult.rows[0] || null });
   } catch (error) {
     console.error('[API TICKET DETAILS ERROR]', error);
     return sendInternalError(req, res);
