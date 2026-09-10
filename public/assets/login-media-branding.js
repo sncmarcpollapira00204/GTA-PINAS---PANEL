@@ -5,14 +5,12 @@
 
   document.title = 'GTA Pinas Roleplay Management Panel';
 
-  function removeLoginBackground() {
+  function clearLoginBackground() {
     document.querySelector('.login-background')?.remove();
     document.querySelector('.background-overlay')?.remove();
   }
 
   function applyGtaPinasBranding() {
-    removeLoginBackground();
-
     document.querySelectorAll('.brand img').forEach((img) => {
       img.src = '/assets/gta-pinas-logo.svg';
       img.alt = 'GTA Pinas Roleplay';
@@ -34,7 +32,6 @@
     const replacements = [
       ['5th Avenue Roleplay', 'GTA Pinas Roleplay'],
       ['5th Avenue Web Panel', 'GTA Pinas Web Panel'],
-      ['5th Avenue Web Panel', 'GTA Pinas Roleplay Management Panel'],
       ['5TH AVENUE ROLEPLAY', 'GTA PINAS ROLEPLAY'],
       ['5TH AVENUE', 'GTA PINAS'],
       ['5th Avenue × University registered staff only.', 'GTA Pinas Roleplay Management Panel'],
@@ -54,6 +51,59 @@
       });
       if (next !== textNode.nodeValue) textNode.nodeValue = next;
     });
+  }
+
+  function injectBackground(asset) {
+    const page = document.querySelector('.page');
+    if (!page || !asset?.url) return;
+
+    clearLoginBackground();
+
+    const resolvedUrl = new URL(asset.url, window.location.href).href;
+    const media = asset.kind === 'video' ? document.createElement('video') : document.createElement('img');
+    media.className = 'login-background';
+    media.src = resolvedUrl;
+    media.setAttribute('aria-hidden', 'true');
+
+    if (asset.kind === 'video') {
+      media.muted = true;
+      media.loop = true;
+      media.autoplay = true;
+      media.playsInline = true;
+      media.preload = 'metadata';
+      media.disablePictureInPicture = true;
+    } else {
+      media.alt = '';
+      media.decoding = 'async';
+      media.loading = 'eager';
+    }
+
+    Object.assign(media.style, {
+      position: 'absolute',
+      inset: '0',
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      objectPosition: 'center',
+      zIndex: '0',
+      filter: 'brightness(.60) saturate(.95)',
+      pointerEvents: 'none',
+      userSelect: 'none',
+    });
+
+    const overlay = document.createElement('div');
+    overlay.className = 'background-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    Object.assign(overlay.style, {
+      position: 'absolute',
+      inset: '0',
+      zIndex: '1',
+      background: 'linear-gradient(90deg, rgba(2,8,20,.22), rgba(2,8,20,.46)), linear-gradient(180deg, rgba(2,8,20,.16), rgba(2,8,20,.38))',
+      pointerEvents: 'none',
+    });
+
+    page.prepend(media, overlay);
+    if (asset.kind === 'video') void media.play().catch(() => {});
   }
 
   applyGtaPinasBranding();
@@ -91,7 +141,7 @@
         return response.json();
       })
       .then((payload) => {
-        removeLoginBackground();
+        injectBackground(payload.slots?.login_banner);
         replaceLoginMusic(payload.slots?.login_music);
         applyGtaPinasBranding();
         return payload;
