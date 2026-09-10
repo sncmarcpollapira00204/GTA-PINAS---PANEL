@@ -20,7 +20,7 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-discohook1`;
+const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix1`;
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 let httpServer = null;
 let cleanupTimer = null;
@@ -37,12 +37,33 @@ function injectBeforeClosingTag(html, closingTag, snippets) {
   return html.replace(closingTag, `    ${missing.join('\n    ')}\n${closingTag}`);
 }
 
+function removeNavItemsByLabel(html, labels) {
+  const wanted = labels.map(label => String(label).trim().toLowerCase());
+  return html.replace(/<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*>[\s\S]*?<\/a>/gi, match => {
+    const text = match.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+    return wanted.some(label => text === label || text.includes(label)) ? '' : match;
+  });
+}
+
+function removeEmptyManagementGroup(html) {
+  return html.replace(/<div\b[^>]*data-nav-group=["']management["'][^>]*>[\s\S]*?<\/div>/gi, group => {
+    const remainingItems = group.match(/<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*>/gi);
+    return remainingItems?.length ? group : '';
+  });
+}
+
 function injectEmbedEditorNav(html) {
-  const settingsNav = `                        <a class="nav-item" data-target="view-settings" title="Settings">\n                            <i data-lucide="settings" size="18"></i><span class="nav-label">Settings</span>\n                        </a>`;
   const embedNav = `                        <a class="nav-item" data-target="view-donation-embed-editor" title="Embed Editor" href="#">\n                            <i data-lucide="square-pen" size="18"></i><span class="nav-label">Embed Editor</span>\n                        </a>`;
-  if (html.includes('data-target="view-donation-embed-editor"')) return html;
-  if (!html.includes(settingsNav)) return html;
-  return html.replace(settingsNav, `${settingsNav}\n${embedNav}`);
+  let result = removeNavItemsByLabel(html, ['Embed Editor', 'Staff', 'Backup Center']);
+  result = removeEmptyManagementGroup(result);
+
+  const dashboardPattern = /(<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*data-target=["']view-dashboard["'][^>]*>[\s\S]*?<\/a>)/i;
+  if (dashboardPattern.test(result)) return result.replace(dashboardPattern, `$1\n${embedNav}`);
+
+  const dashboardLabelPattern = /(<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*>[\s\S]*?<span\b[^>]*class=["'][^"']*nav-label[^"']*["'][^>]*>\s*Dashboard\s*<\/span>[\s\S]*?<\/a>)/i;
+  if (dashboardLabelPattern.test(result)) return result.replace(dashboardLabelPattern, `$1\n${embedNav}`);
+
+  return result;
 }
 
 async function loadPageTemplates() {
