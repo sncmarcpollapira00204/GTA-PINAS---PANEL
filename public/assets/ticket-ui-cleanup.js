@@ -3,6 +3,7 @@
 (() => {
   let ticketObserver = null;
   let brandingObserver = null;
+  let panelObserver = null;
 
   function installStyles() {
     if (document.getElementById('ticket-ui-cleanup-styles')) return;
@@ -137,6 +138,40 @@
     });
   }
 
+  function removeWhitelistAndPerformanceUI() {
+    const selectors = [
+      '#nav-whitelist-menu',
+      '[data-nav-group="whitelist"]',
+      '#view-whitelist-check',
+      '#view-whitelist-pending',
+      '#view-whitelist-approved',
+      '#view-staff-performance',
+      '[data-target="view-staff-performance"]',
+      '[data-target="view-whitelist-check"]',
+      '[data-target="view-whitelist-pending"]',
+      '[data-target="view-whitelist-approved"]',
+    ];
+
+    selectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => el.remove());
+    });
+
+    document.querySelectorAll('.dashboard-stat-card').forEach((card) => {
+      const text = String(card.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (text.includes('pending whitelist') || text.includes('whitelisted') || text.includes('total management team')) {
+        card.remove();
+      }
+    });
+
+    document.querySelectorAll('.nav-item, .nav-dropdown-toggle, .nav-dropdown').forEach((el) => {
+      const text = String(el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (text === 'staff performance' || text === 'whitelist' || text === 'check voucher' || text === 'pending whitelist' || text === 'whitelisted') {
+        const target = el.closest('.nav-dropdown, .nav-item, li') || el;
+        target.remove();
+      }
+    });
+  }
+
   function observeBranding() {
     if (brandingObserver) return;
     brandingObserver = new MutationObserver(() => {
@@ -144,6 +179,14 @@
       hideManageStaffMenuItem();
     });
     brandingObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function observePanelCleanup() {
+    if (panelObserver) return;
+    panelObserver = new MutationObserver(() => {
+      removeWhitelistAndPerformanceUI();
+    });
+    panelObserver.observe(document.body, { childList: true, subtree: true });
   }
 
   function removePriorityColumn() {
@@ -187,7 +230,9 @@
     installStyles();
     applyGtaPinasBranding(document);
     hideManageStaffMenuItem();
+    removeWhitelistAndPerformanceUI();
     observeBranding();
+    observePanelCleanup();
     removePriorityColumn();
     observeTicketRows();
   }
