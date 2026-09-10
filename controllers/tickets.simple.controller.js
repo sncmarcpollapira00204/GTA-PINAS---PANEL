@@ -33,6 +33,22 @@ function parseTicketDetails(details) {
   }
 }
 
+function buildDefaultDiscordAvatar(userId) {
+  const id = String(userId || '').trim();
+  if (!/^\d{15,22}$/.test(id)) return null;
+  try {
+    const index = Number((BigInt(id) >> 22n) % 6n);
+    return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
+  } catch {
+    return null;
+  }
+}
+
+function withAvatarFallback(avatar, userId) {
+  const value = String(avatar || '').trim();
+  return value || buildDefaultDiscordAvatar(userId);
+}
+
 function hydrateIdentityFallbacks(rows) {
   return rows.map((ticket) => {
     const details = parseTicketDetails(ticket.details);
@@ -47,6 +63,10 @@ function hydrateIdentityFallbacks(rows) {
       closed_by_username: isPlaceholderName(ticket.closed_by_username) && closerFallback && !isPlaceholderName(closerFallback)
         ? closerFallback
         : ticket.closed_by_username,
+      user_avatar: withAvatarFallback(ticket.user_avatar, ticket.user_id),
+      assigned_by_avatar: withAvatarFallback(ticket.assigned_by_avatar, ticket.assigned_to),
+      claimed_by_avatar: withAvatarFallback(ticket.claimed_by_avatar, ticket.claimed_by),
+      closed_by_avatar: withAvatarFallback(ticket.closed_by_avatar, ticket.closed_by),
     };
   });
 }
