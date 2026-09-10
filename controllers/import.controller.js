@@ -36,7 +36,6 @@ function sleep(milliseconds) {
 
 async function discordRequest(pathname, options = {}, maxAttempts = 4) {
   let lastError = null;
-
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       const response = await fetch(`${DISCORD_API}${pathname}`, {
@@ -46,16 +45,13 @@ async function discordRequest(pathname, options = {}, maxAttempts = 4) {
       const payload = await response.text();
       let data = null;
       try { data = JSON.parse(payload); } catch {}
-
       if (response.ok) return data;
 
       const detail = data?.message || payload || `Discord request failed (${response.status}).`;
       const error = new Error(detail);
       error.status = response.status;
       lastError = error;
-
       if (![429, 500, 502, 503, 504].includes(response.status) || attempt >= maxAttempts) throw error;
-
       const retryAfter = Number(data?.retry_after || response.headers.get('retry-after') || 1);
       await sleep(Math.min(5000, Math.max(250, retryAfter * 1000)));
     } catch (error) {
@@ -65,7 +61,6 @@ async function discordRequest(pathname, options = {}, maxAttempts = 4) {
       await sleep(500 * attempt);
     }
   }
-
   throw lastError || new Error('Discord request failed.');
 }
 
@@ -121,9 +116,7 @@ function findAttachmentMessage(messages, index, ticketName) {
 
 function buildAvatarUrl(user) {
   if (!user?.id) return null;
-  if (user.avatar) {
-    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${String(user.avatar).startsWith('a_') ? 'gif' : 'png'}?size=128`;
-  }
+  if (user.avatar) return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${String(user.avatar).startsWith('a_') ? 'gif' : 'png'}?size=128`;
   try {
     const defaultIndex = Number((BigInt(String(user.id)) >> 22n) % 6n);
     return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`;
@@ -137,7 +130,6 @@ async function fetchGuildMember(discordId) {
   try {
     return await discordRequest(`/guilds/${String(config.guildId)}/members/${String(discordId)}`);
   } catch (error) {
-    // Profile enrichment is optional; an unavailable member must never fail the import.
     console.warn(`[IMPORT IDENTITY] Skipping ${discordId}: ${error.message}`);
     return null;
   }
@@ -226,12 +218,13 @@ async function storeImportedTranscript({ source, summary, ownerId, ticketOwnerNa
   if (ownerId) await upsertUser(ownerId, ticketOwnerName || null);
   if (closedById) await upsertStaff(closedById, closedByName || null);
 
+  // Keep Discord as the transcript storage. PostgreSQL stores only a lightweight link.
+  await pool.query('DELETE FROM ticket_transcripts WHERE ticket_id = $1', [deterministicId]);
   await pool.query(
-    `DELETE FROM ticket_transcripts WHERE ticket_id=$1;
-     INSERT INTO ticket_transcripts
-       (id,ticket_id,html_content,discord_url,log_channel_id,log_message_id)
-     VALUES ($2,$1,NULL,$3,$4,$5)`,
-    [deterministicId, transcriptId, transcriptUrl || null, String(config.importSources.transcriptChannelId), summary.id]
+    `INSERT INTO ticket_transcripts
+      (id,ticket_id,html_content,discord_url,log_channel_id,log_message_id)
+     VALUES ($1,$2,NULL,$3,$4,$5)`,
+    [transcriptId, deterministicId, transcriptUrl || null, String(config.importSources.transcriptChannelId), summary.id]
   );
 
   await pool.query(
@@ -330,10 +323,11 @@ async function runImport(job, sourceKey) {
   }
 
   const nothingFound = candidates.length === 0;
+  const completedWithPartialFailures = imported > 0;
   setJob(job.id, {
-    status: failed > 0 && imported === 0 ? 'failed' : 'completed',
+    status: failed > 0 && !completedWithPartialFailures ? 'failed' : 'completed',
     progress: 100,
-    stage: failed > 0 && imported === 0 ? 'Import failed' : 'Import complete',
+    stage: failed > 0 && !completedWithPartialFailures ? 'Import failed' : 'Import complete',
     message: nothingFound
       ? `${source.label}: no matching ticket summaries found in the configured transcript channel.`
       : `${source.label}: ${imported} tickets imported, ${transcriptCount} transcript links saved, ${failed} failed.${failures.length ? ` First error: ${failures[0].error}` : ''}`,
