@@ -34,10 +34,12 @@
             #view-donation-embed-editor .dee-field input,#view-donation-embed-editor .dee-field textarea,#view-donation-embed-editor .dee-field select{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;background:var(--bg-main);color:var(--text-main);outline:none;padding:10px 11px;font:inherit;font-size:11px;transition:border-color .15s,box-shadow .15s}
             #view-donation-embed-editor .dee-field textarea{min-height:155px;resize:vertical;line-height:1.55}
             #view-donation-embed-editor .dee-field input:focus,#view-donation-embed-editor .dee-field textarea:focus,#view-donation-embed-editor .dee-field select:focus{border-color:var(--primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--primary) 10%,transparent)}
-            #view-donation-embed-editor .dee-actions{display:flex;gap:8px;margin-top:10px}.dee-actions .btn{flex:1;min-height:36px}
+            #view-donation-embed-editor .dee-actions{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+            #view-donation-embed-editor .dee-actions .btn{min-height:34px;width:auto;flex:0 0 150px;padding:7px 14px}
             #view-donation-embed-editor .dee-preview-wrap{position:sticky;top:16px;height:max-content}
             #view-donation-embed-editor .dee-preview-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.dee-preview-label strong{font-size:12px}
-            #view-donation-embed-editor .dee-preview-label span{font-size:9px;color:var(--text-sec)}
+            #view-donation-embed-editor .dee-preview-trigger{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--primary);font:inherit;font-size:10px;font-weight:700;padding:4px 0;cursor:pointer}
+            #view-donation-embed-editor .dee-preview-trigger:hover{opacity:.82}
             #view-donation-embed-editor .dee-discord{background:#313338;border-radius:6px;padding:18px;min-height:320px}
             #view-donation-embed-editor .dee-discord-user{display:flex;align-items:center;gap:9px;margin-bottom:14px}.dee-discord-avatar{width:32px;height:32px;border-radius:50%;background:#5865f2;display:grid;place-items:center;font-size:10px;font-weight:800}.dee-discord-user strong{font-size:11px}.dee-discord-user span{display:block;color:#949ba4;font-size:9px;margin-top:2px}
             #view-donation-embed-editor .dee-embed{position:relative;width:100%;max-width:540px;box-sizing:border-box;background:#2b2d31;border-left:4px solid #5865f2;border-radius:3px;padding:12px 14px;color:#dbdee1;overflow:hidden}
@@ -45,10 +47,11 @@
             #view-donation-embed-editor .dee-embed-author{font-size:10px;font-weight:700;margin-bottom:7px}.dee-embed-title{font-size:14px;font-weight:700;margin-bottom:6px}.dee-embed-description{font-size:11px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
             #view-donation-embed-editor .dee-embed-thumbnail{position:absolute;top:12px;right:14px;width:72px;height:72px;border-radius:4px;object-fit:cover}.dee-embed-image{display:block;width:100%;max-height:260px;border-radius:4px;margin-top:10px;object-fit:contain}
             #view-donation-embed-editor .dee-embed-footer{color:#949ba4;font-size:9px;margin-top:10px;padding-top:2px}
-            #view-donation-embed-editor .dee-send-box{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}.dee-send-box label{display:block;font-size:10px;font-weight:700;color:var(--text-main);margin-bottom:6px}.dee-status{margin-top:10px;font-size:10px;color:var(--text-sec);min-height:16px}.dee-status.error{color:var(--danger)}.dee-status.success{color:var(--success)}
-            #view-donation-embed-editor #dee-send-button{min-height:36px;margin-top:8px!important}
+            #view-donation-embed-editor .dee-send-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}.dee-send-box label{display:block;font-size:10px;font-weight:700;color:var(--text-main);margin-bottom:6px}.dee-status{margin-top:10px;font-size:10px;color:var(--text-sec);min-height:16px}.dee-status.error{color:var(--danger)}.dee-status.success{color:var(--success)}
+            #view-donation-embed-editor #dee-channel{height:36px}
+            #view-donation-embed-editor #dee-send-button{min-height:34px;width:auto!important;margin-top:10px!important;padding:7px 14px}
             @media(max-width:900px){#view-donation-embed-editor .dee-shell{grid-template-columns:1fr}.dee-preview-wrap{position:static}}
-            @media(max-width:620px){#view-donation-embed-editor .dee-grid{grid-template-columns:1fr}.dee-field.full{grid-column:auto}.dee-card{padding:15px!important}.dee-actions{flex-direction:column}}
+            @media(max-width:620px){#view-donation-embed-editor .dee-grid{grid-template-columns:1fr}.dee-field.full{grid-column:auto}.dee-card{padding:15px!important}.dee-actions{flex-direction:column;align-items:stretch}.dee-actions .btn{flex:1;width:100%}}
         `;
         document.head.appendChild(style);
     }
@@ -82,10 +85,10 @@
                         <div class="dee-field"><label for="dee-author">Author</label><input id="dee-author" maxlength="256" placeholder="GTA Pinas Treasury"></div>
                         <div class="dee-field"><label for="dee-footer">Footer</label><input id="dee-footer" maxlength="2048" placeholder="GTA Pinas Treasury"></div>
                     </div>
-                    <div class="dee-actions"><button class="btn btn-outline" type="button" onclick="window.donationEmbedEditor.reset()"><i data-lucide="rotate-ccw" size="15"></i> Reset</button><button class="btn btn-primary" type="button" onclick="window.donationEmbedEditor.preview()"><i data-lucide="eye" size="15"></i> Preview</button></div>
-                    <div class="dee-send-box"><label for="dee-channel">Donation channel</label><select id="dee-channel"><option value="">Loading channels...</option></select><button id="dee-send-button" class="btn btn-success" style="width:100%;margin-top:11px" type="button" onclick="window.donationEmbedEditor.send()"><i data-lucide="send" size="15"></i> Send to Discord</button><div id="dee-status" class="dee-status"></div></div>
+                    <div class="dee-actions"><button class="btn btn-outline" type="button" onclick="window.donationEmbedEditor.reset()"><i data-lucide="rotate-ccw" size="15"></i> Reset</button></div>
+                    <div class="dee-send-box"><label for="dee-channel">Donation channel</label><select id="dee-channel"><option value="">Loading channels...</option></select><button id="dee-send-button" class="btn btn-success" type="button" onclick="window.donationEmbedEditor.send()"><i data-lucide="send" size="15"></i> Send to Discord</button><div id="dee-status" class="dee-status"></div></div>
                 </section>
-                <section class="dee-card dee-preview-wrap"><div class="dee-preview-label"><strong>Discord preview</strong><span>Live preview</span></div><div id="dee-preview" class="dee-discord"></div></section>
+                <section class="dee-card dee-preview-wrap"><div class="dee-preview-label"><strong>Discord preview</strong><button class="dee-preview-trigger" type="button" onclick="window.donationEmbedEditor.preview()"><i data-lucide="eye" size="14"></i> Preview</button></div><div id="dee-preview" class="dee-discord"></div></section>
             </div>`;
         main.appendChild(section);
     }
