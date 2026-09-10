@@ -90,20 +90,47 @@ function findAttachmentMessage(messages, index) {
 }
 
 function parseOwnerId(value) {
-  return String(value || '').match(/<@!?([0-9]+)>/)?.[1] || null;
+  return String(value || '').match(/<@!?(\d+)>/)?.[1] || null;
 }
 
-async function upsertUser(userId, username) {
+async function fetchGuildMember(discordId) {
+  if (!discordId) return null;
+  try {
+    const member = await discordRequest(`/guilds/${String(config.guildId)}/members/${String(discordId)}`);
+    return member || null;
+  } catch (error) {
+    if (error?.status === 404) return null;
+    throw error;
+  }
+}
+
+async function upsertUser(userId, username, avatar = null) {
   if (!userId) return;
   await pool.query(
-    `INSERT INTO users (id, username, is_bot, updated_at)
-     VALUES ($1, $2, FALSE, CURRENT_TIMESTAMP)
-     ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username, updated_at=CURRENT_TIMESTAMP`,
-    [String(userId), String(username || 'Unknown User')]
+    `INSERT INTO users (id, username, avatar, is_bot, updated_at)
+     VALUES ($1, $2, $3, FALSE, CURRENT_TIMESTAMP)
+     ON CONFLICT (id) DO UPDATE SET
+       username = EXCLUDED.username,
+       avatar = COALESCE(EXCLUDED.avatar, users.avatar),
+       updated_at = CURRENT_TIMESTAMP`,
+    [String(userId), String(username || 'Unknown User'), avatar || null]
   );
 }
 
-async function storeImportedTranscript({ source, summary, attachmentMessage, ownerId, ticketName, panelName }) {
+async function upsertStaff(staffId, username, avatar = null) {
+  if (!staffId) return;
+  await pool.query(
+    `INSERT INTO staff (id, username, avatar, updated_at)
+     VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+     ON CONFLICT (id) DO UPDATE SET
+       username = EXCLUDED.username,
+       avatar = COALESCE(EXCLUDED.avatar, staff.avatar),
+       updated_at = CURRENT_TIMESTAMP`,
+    [String(staffId), String(username || 'Unknown Staff'), avatar || null]
+  );
+}
+
+async function storeImportedTranscript({ source, summary, attachmentMessage, ownerId, ticketOwnerName, ticketName, panelName, closedById, closedByName }) {
   const transcriptUrl = attachmentMessage?.attachments?.[0]?.url || null;
   let htmlContent = null;
 
@@ -124,14 +151,16 @@ async function storeImportedTranscript({ source, summary, attachmentMessage, own
     transcriptSummaryMessageId: summary.id,
     transcriptAttachmentMessageId: attachmentMessage?.id || null,
     panelName: panelName || null,
+    ticketOwnerName: ticketOwnerName || null,
+    closedByName: closedByName || null,
   });
 
   await pool.query(
     `INSERT INTO tickets
       (id, ticket_id, ticket_number, guild_id, channel_id, channel_name, user_id, category,
-       status, details, closed_at, transcript_message_id, transcript_channel_id, transcript_url,
+       status, details, closed_at, closed_by, transcript_message_id, transcript_channel_id, transcript_url,
        import_source, updated_at)
-     VALUES ($1,$1,$2,$3,$4,$5,$6,$7,'closed',$8,CURRENT_TIMESTAMP,$9,$10,$11,'discord_transcript',CURRENT_TIMESTAMP)
+     VALUES ($1,$1,$2,$3,$4,$5,$6,$7,'closed',$8,CURRENT_TIMESTAMP,$9,$10,$11,$12,'discord_transcript',CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
        ticket_number=EXCLUDED.ticket_number,
        channel_name=EXCLUDED.channel_name,
@@ -139,15 +168,30 @@ async function storeImportedTranscript({ source, summary, attachmentMessage, own
        category=EXCLUDED.category,
        status='closed',
        details=EXCLUDED.details,
+       closed_by=EXCLUDED.closed_by,
        transcript_message_id=EXCLUDED.transcript_message_id,
        transcript_channel_id=EXCLUDED.transcript_channel_id,
        transcript_url=EXCLUDED.transcript_url,
        updated_at=CURRENT_TIMESTAMP
      RETURNING id`,
-    [deterministicId, ticketNumber, String(config.guildId), `discord-${summary.id}`, ticketName, ownerId, source.label, details, summary.id, String(config.importSources.transcriptChannelId), transcriptUrl]
+    [
+      deterministicId,
+      ticketNumber,
+      String(config.guildId),
+      `discord-${summary.id}`,
+      ticketName,
+      ownerId,
+      source.label,
+      details,
+      closedById,
+      summary.id,
+      String(config.importSources.transcriptChannelId),
+      transcriptUrl,
+    ]
   );
 
-  if (ownerId) await upsertUser(ownerId, cleanText(fieldMap(summary)['ticket owner']) || 'Unknown User');
+  if (ownerId) await upsertUser(ownerId, ticketOwnerName || 'Unknown User');
+  if (closedById) await upsertStaff(closedById, closedByName || 'Unknown Staff');
 
   if (htmlContent) {
     await pool.query('DELETE FROM ticket_transcripts WHERE ticket_id=$1', [deterministicId]);
@@ -194,10 +238,38 @@ async function runImport(job, sourceKey) {
     const summary = candidates[index];
     const fields = fieldMap(summary);
     const ticketName = cleanText(fields['ticket name']);
-    const ownerId = parseOwnerId(fields['ticket owner']);
+    const rawOwner = String(fields['ticket owner'] || '');
+    const ownerId = parseOwnerId(rawOwner);
+    const closedByRaw = String(
+      fields['closed by'] || fields['closed_by'] || fields['closed by staff'] || fields['handled by'] || ''
+    );
+    const closedById = parseOwnerId(closedByRaw);
     const attachmentMessage = findAttachmentMessage(messages, messages.indexOf(summary));
+
+    let ticketOwnerName = cleanText(rawOwner);
+    let closedByName = cleanText(closedByRaw);
+
     try {
-      const result = await storeImportedTranscript({ source, summary, attachmentMessage, ownerId, ticketName, panelName: cleanText(fields['panel name']) });
+      if (ownerId) {
+        const ownerMember = await fetchGuildMember(ownerId);
+        if (ownerMember) ticketOwnerName = ownerMember.nick || ownerMember.user?.global_name || ownerMember.user?.username || ticketOwnerName;
+      }
+      if (closedById) {
+        const closedByMember = await fetchGuildMember(closedById);
+        if (closedByMember) closedByName = closedByMember.nick || closedByMember.user?.global_name || closedByMember.user?.username || closedByName;
+      }
+
+      const result = await storeImportedTranscript({
+        source,
+        summary,
+        attachmentMessage,
+        ownerId,
+        ticketOwnerName,
+        ticketName,
+        panelName: cleanText(fields['panel name']),
+        closedById,
+        closedByName,
+      });
       imported += 1;
       if (result.htmlImported) htmlCount += 1;
     } catch (error) {
