@@ -110,22 +110,26 @@
 
   function replaceLoginMusic(asset) {
     const audio = document.getElementById('loginOst');
-    if (!audio || !asset?.url) return;
+    if (!audio) return;
 
-    const resolvedUrl = new URL(asset.url, window.location.href).href;
+    // Login OST is intentionally sourced from the repository asset so an old
+    // database media override cannot keep playing the previous track.
+    const forcedMusicUrl = `/assets/gtapinasmusic2.mp3?v=20260911-music2`;
+    const resolvedUrl = new URL(forcedMusicUrl, window.location.href).href;
+
     if (audio.src !== resolvedUrl) {
       const wasPlaying = !audio.paused;
-      audio.src = asset.url;
-      audio.preload = 'metadata';
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.src = forcedMusicUrl;
+      audio.preload = 'auto';
       audio.load();
       if (wasPlaying) void audio.play().catch(() => {});
     }
 
     const watermark = document.querySelector('.ost-watermark');
     if (watermark) {
-      watermark.textContent = asset.isDefault
-        ? 'GTA Pinas OST'
-        : (asset.originalName || 'GTA Pinas Web Music');
+      watermark.textContent = 'GTA Pinas OST';
     }
   }
 
@@ -133,7 +137,7 @@
     if (mediaPromise) return mediaPromise;
 
     mediaPromise = fetch('/media/config', {
-      cache: 'default',
+      cache: 'no-store',
       credentials: 'same-origin',
     })
       .then((response) => {
@@ -148,6 +152,7 @@
       })
       .catch((error) => {
         console.warn('[LOGIN MEDIA]', error.message || error);
+        replaceLoginMusic(null);
         applyGtaPinasBranding();
         return null;
       });
