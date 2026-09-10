@@ -173,6 +173,16 @@
     });
   }
 
+  function loadCityRulesFeature() {
+    if (document.querySelector('script[data-gta-city-rules]')) return;
+    const script = document.createElement('script');
+    script.src = '/assets/city-rules.js?v=20260910';
+    script.defer = true;
+    script.dataset.gtaCityRules = 'true';
+    script.addEventListener('error', () => console.warn('[CITY RULES] Unable to load city-rules.js.'));
+    document.head.appendChild(script);
+  }
+
   function observeBranding() {
     if (brandingObserver) return;
     brandingObserver = new MutationObserver(() => {
@@ -223,6 +233,7 @@
     installStyles();
     applyGtaPinasBranding(document);
     hideManageStaffMenuItem();
+    loadCityRulesFeature();
     observeBranding();
     removePriorityColumn();
     observeTicketRows();
