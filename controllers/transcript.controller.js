@@ -45,10 +45,6 @@ async function discordJson(pathname) {
   return response.json().catch(() => null);
 }
 
-function isPlaceholderName(value) {
-  return /^(user|unknown user|archived user|discord user)$/i.test(String(value || '').trim());
-}
-
 async function resolveDiscordProfile(discordId) {
   const id = String(discordId || '').trim();
   if (!/^\d{15,22}$/.test(id)) return null;
@@ -74,7 +70,12 @@ async function resolveDiscordProfile(discordId) {
     } catch (_) {}
   }
 
-  return { id: String(user.id), author: displayName, avatar: avatar || null, bot: Boolean(user.bot) };
+  return {
+    id: String(user.id),
+    author: displayName,
+    avatar: avatar || null,
+    bot: Boolean(user.bot),
+  };
 }
 
 async function hydrateTranscriptProfiles(html) {
@@ -88,7 +89,10 @@ async function hydrateTranscriptProfiles(html) {
 
   const resolved = await Promise.all(entries.map(async ([profileId, profile]) => {
     const current = profile && typeof profile === 'object' ? { ...profile } : {};
-    if (!/^\d{15,22}$/.test(String(profileId)) || !isPlaceholderName(current.author)) {
+
+    // Discord transcript profiles are keyed by the real Discord user ID.
+    // Always hydrate numeric IDs so stale "User" placeholders cannot survive.
+    if (!/^\d{15,22}$/.test(String(profileId))) {
       return [profileId, current];
     }
 
@@ -99,7 +103,7 @@ async function hydrateTranscriptProfiles(html) {
       ...current,
       author: identity.author,
       avatar: identity.avatar || current.avatar,
-      bot: current.bot ?? identity.bot,
+      bot: identity.bot,
     }];
   }));
 
