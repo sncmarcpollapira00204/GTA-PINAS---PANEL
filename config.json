@@ -13,6 +13,9 @@
     "Donation": "donation-ticket"
   },
   "mainTranscriptChannelId": "1531349051998732349",
+  "transcriptChannels": {
+    "main": "1531349051998732349"
+  },
   "importSources": {
     "transcriptChannelId": "1531349051998732349",
     "categories": {
