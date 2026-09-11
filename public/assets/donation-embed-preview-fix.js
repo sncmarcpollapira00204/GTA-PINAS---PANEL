@@ -64,7 +64,6 @@
       flushQuote();
       html.push(line ? inlineMarkdown(line) : '<br>');
     }
-
     flushQuote();
     return html.join('<br>');
   }
@@ -151,25 +150,26 @@
     if (!root || root.dataset.accuratePreviewBound === '1') return Boolean(root);
     root.dataset.accuratePreviewBound = '1';
 
+    const deferRender = (delay = 0) => window.setTimeout(render, delay);
+
     root.addEventListener('input', (event) => {
       if (event.target?.matches?.('#dee-title,#dee-description,#dee-color,#dee-image,#dee-thumbnail,#dee-author,#dee-footer')) {
-        render();
+        deferRender(0);
       }
     }, true);
 
     root.addEventListener('click', (event) => {
       if (event.target?.closest?.('#dee-load-button,#dee-reset,#dee-preview-button')) {
-        window.setTimeout(render, 80);
+        deferRender(100);
       }
     }, true);
 
     new MutationObserver(() => {
-      if (document.getElementById('dee-preview') && !document.querySelector('#dee-preview [data-accurate-renderer="1"]')) {
-        render();
-      }
+      const box = document.getElementById('dee-preview');
+      if (box && !box.querySelector('[data-accurate-renderer="1"]')) deferRender(0);
     }).observe(root, { childList: true, subtree: true });
 
-    window.setTimeout(render, 0);
+    deferRender(0);
     return true;
   }
 
