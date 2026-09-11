@@ -73,3 +73,5 @@ For a verification pass:
 ```text
 npm run verify
 ```
+
+<!-- Railway redeploy marker: stable rollback -->
