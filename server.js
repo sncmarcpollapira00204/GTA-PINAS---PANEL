@@ -91,6 +91,7 @@ async function loadPageTemplates() {
     `<script defer src="/assets/transcript-meta-footer.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/open-ticket-discord.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/media-branding.js?v=${PANEL_ASSET_VERSION}"></script>`,
+    `<script defer src="/assets/logo-render-fix-inline.js?v=${PANEL_ASSET_VERSION}"></script>`,
     '<script defer src="/assets/manage-staff.js?v=20260816-3"></script>',
     `<script defer src="/assets/donation-embed-editor.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/donation-embed-preview-fix.js?v=${PANEL_ASSET_VERSION}"></script>`,
@@ -136,8 +137,6 @@ async function readinessResponse(req, res) {
 }
 app.get(['/api/health', '/api/health/ready'], readinessResponse);
 
-// Stable, minimal ticket endpoints. These sit before the legacy router so dashboard
-// and live ticket refreshes keep working even when optional joins/config are stale.
 app.get('/api/dashboard', requireApiAuth, async (req, res) => {
   try {
     let result;
