@@ -76,14 +76,48 @@
     };
   }
 
+  function normalizeQuoteSpacing(description) {
+    const nodes = Array.from(description.childNodes);
+    let changed = false;
+
+    for (let i = 0; i < nodes.length;) {
+      if (nodes[i].nodeType !== Node.ELEMENT_NODE || nodes[i].tagName !== 'BR') {
+        i += 1;
+        continue;
+      }
+
+      const start = i;
+      while (i < nodes.length && nodes[i].nodeType === Node.ELEMENT_NODE && nodes[i].tagName === 'BR') i += 1;
+      const end = i;
+      const count = end - start;
+
+      const previous = nodes[start - 1];
+      const next = nodes[end];
+      const previousIsQuote = previous?.nodeType === Node.ELEMENT_NODE && previous.classList.contains('dh-quote');
+      const nextIsQuote = next?.nodeType === Node.ELEMENT_NODE && next.classList.contains('dh-quote');
+
+      // Consecutive quoted lines are already block elements. One source newline
+      // should not create another visual line; two source newlines should keep
+      // exactly one blank line, matching Discord's normal spacing.
+      if (previousIsQuote && nextIsQuote) {
+        const keep = count >= 2 ? 1 : 0;
+        for (let j = start; j < end - keep; j += 1) {
+          nodes[j]?.remove();
+          changed = true;
+        }
+      }
+    }
+
+    return changed;
+  }
+
   function installStyles() {
     if (document.getElementById('gta-preview-spacing-fix')) return;
     const style = document.createElement('style');
     style.id = 'gta-preview-spacing-fix';
     style.textContent = `
-      .dh-description > .dh-quote + br,
-      .dh-description > br:has(+ .dh-quote) { display:none !important; }
-      .dh-description > .dh-quote { margin-top:0 !important; margin-bottom:0 !important; }
+      .dh-description > .dh-quote,
+      .dh-description > .dh-quote.dh-markdown-heading { margin-top:0 !important; margin-bottom:0 !important; }
       .dh-description > .dh-quote + .dh-quote { margin-top:0 !important; }
     `;
     document.head.appendChild(style);
@@ -95,12 +129,7 @@
     if (changed) document.getElementById('dee-description')?.dispatchEvent(new Event('input', { bubbles: true }));
 
     document.querySelectorAll('#dee-preview .dh-description').forEach((description) => {
-      Array.from(description.childNodes).forEach((node) => {
-        if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'BR') return;
-        const previous = node.previousElementSibling;
-        const next = node.nextElementSibling;
-        if (previous?.classList.contains('dh-quote') || next?.classList.contains('dh-quote')) node.remove();
-      });
+      normalizeQuoteSpacing(description);
     });
   }
 
@@ -112,10 +141,10 @@
     if (!root) return window.setTimeout(boot, 100);
 
     root.addEventListener('click', (event) => {
-      if (event.target?.closest?.('#dee-load-button')) {
-        window.setTimeout(cleanup, 300);
-      }
+      if (event.target?.closest?.('#dee-load-button')) window.setTimeout(cleanup, 300);
     }, true);
+
+    root.addEventListener('input', () => window.setTimeout(cleanup, 0), true);
 
     new MutationObserver(cleanup).observe(root, { childList:true, subtree:true });
   }
