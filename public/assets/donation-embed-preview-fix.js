@@ -76,39 +76,37 @@
     };
   }
 
-  function normalizeQuoteSpacing(description) {
-    const nodes = Array.from(description.childNodes);
-    let changed = false;
+  function compactQuoteBlocks(description) {
+    const children = Array.from(description.childNodes);
 
-    for (let i = 0; i < nodes.length;) {
-      if (nodes[i].nodeType !== Node.ELEMENT_NODE || nodes[i].tagName !== 'BR') {
-        i += 1;
-        continue;
-      }
+    for (let i = 0; i < children.length; i += 1) {
+      const current = children[i];
+      if (!(current.nodeType === Node.ELEMENT_NODE && current.classList.contains('dh-quote'))) continue;
 
-      const start = i;
-      while (i < nodes.length && nodes[i].nodeType === Node.ELEMENT_NODE && nodes[i].tagName === 'BR') i += 1;
-      const end = i;
-      const count = end - start;
+      let cursor = current.nextSibling;
+      while (cursor) {
+        const next = cursor.nextSibling;
 
-      const previous = nodes[start - 1];
-      const next = nodes[end];
-      const previousIsQuote = previous?.nodeType === Node.ELEMENT_NODE && previous.classList.contains('dh-quote');
-      const nextIsQuote = next?.nodeType === Node.ELEMENT_NODE && next.classList.contains('dh-quote');
-
-      // Consecutive quoted lines are already block elements. One source newline
-      // should not create another visual line; two source newlines should keep
-      // exactly one blank line, matching Discord's normal spacing.
-      if (previousIsQuote && nextIsQuote) {
-        const keep = count >= 2 ? 1 : 0;
-        for (let j = start; j < end - keep; j += 1) {
-          nodes[j]?.remove();
-          changed = true;
+        if (cursor.nodeType === Node.ELEMENT_NODE && cursor.tagName === 'BR') {
+          cursor.remove();
+          cursor = next;
+          continue;
         }
+
+        if (cursor.nodeType === Node.ELEMENT_NODE && cursor.classList.contains('dh-quote')) {
+          const line = document.createElement('span');
+          line.className = 'dh-quote-line';
+          while (cursor.firstChild) line.appendChild(cursor.firstChild);
+          current.appendChild(document.createElement('br'));
+          current.appendChild(line);
+          cursor.remove();
+          cursor = next;
+          continue;
+        }
+
+        break;
       }
     }
-
-    return changed;
   }
 
   function installStyles() {
@@ -116,9 +114,31 @@
     const style = document.createElement('style');
     style.id = 'gta-preview-spacing-fix';
     style.textContent = `
-      .dh-description > .dh-quote,
-      .dh-description > .dh-quote.dh-markdown-heading { margin-top:0 !important; margin-bottom:0 !important; }
-      .dh-description > .dh-quote + .dh-quote { margin-top:0 !important; }
+      .dh-description > .dh-quote {
+        display:block !important;
+        margin:0 !important;
+        padding:1px 0 1px 10px !important;
+        line-height:19px !important;
+        min-height:19px !important;
+      }
+      .dh-description > .dh-quote + br,
+      .dh-description > br:has(+ .dh-quote) {
+        display:none !important;
+      }
+      .dh-description > .dh-quote .dh-quote-line {
+        display:block !important;
+        margin:0 !important;
+        padding:0 !important;
+        line-height:19px !important;
+      }
+      .dh-description > .dh-quote.dh-markdown-heading,
+      .dh-description > .dh-quote.dh-markdown-heading-1,
+      .dh-description > .dh-quote.dh-markdown-heading-2,
+      .dh-description > .dh-quote.dh-markdown-heading-3 {
+        margin:0 !important;
+        padding-top:1px !important;
+        padding-bottom:1px !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -129,7 +149,7 @@
     if (changed) document.getElementById('dee-description')?.dispatchEvent(new Event('input', { bubbles: true }));
 
     document.querySelectorAll('#dee-preview .dh-description').forEach((description) => {
-      normalizeQuoteSpacing(description);
+      compactQuoteBlocks(description);
     });
   }
 
@@ -143,7 +163,6 @@
     root.addEventListener('click', (event) => {
       if (event.target?.closest?.('#dee-load-button')) window.setTimeout(cleanup, 300);
     }, true);
-
     root.addEventListener('input', () => window.setTimeout(cleanup, 0), true);
 
     new MutationObserver(cleanup).observe(root, { childList:true, subtree:true });
