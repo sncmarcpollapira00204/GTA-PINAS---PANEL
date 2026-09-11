@@ -24,8 +24,12 @@ function splitIds(value) {
 }
 
 function configuredSchoolRoleIds() {
+  const configured = Array.isArray(config.schoolTicketViewerRoleIds)
+    ? config.schoolTicketViewerRoleIds
+    : (Array.isArray(config.ticketViewerRoleIds) ? config.ticketViewerRoleIds : []);
+
   return new Set(
-    (Array.isArray(config.schoolTicketViewerRoleIds) ? config.schoolTicketViewerRoleIds : [])
+    configured
       .map(String)
       .filter((item) => /^\d{15,22}$/.test(item))
   );
@@ -59,7 +63,7 @@ async function discordRequest(path, accessToken, tokenType = 'Bearer') {
   const response = await fetch(`${DISCORD_API}${path}`, {
     headers: {
       Authorization: `${tokenType} ${accessToken}`,
-      'User-Agent': '5th-Avenue-Web-Panel/7.2',
+      'User-Agent': 'GTA-Pinas-Web-Panel/8.0',
     },
     signal: AbortSignal.timeout(12_000),
   });
@@ -90,7 +94,7 @@ async function exchangeAuthorizationCode(code, redirectUri) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': '5th-Avenue-Web-Panel/7.2',
+        'User-Agent': 'GTA-Pinas-Web-Panel/8.0',
       },
       body: requestBody,
       signal: AbortSignal.timeout(15_000),
@@ -177,7 +181,7 @@ async function resolveAccess(memberRoles) {
   const roleId = matching[0];
   return {
     roleId,
-    roleName: roleMap.get(roleId)?.name || (hasFullRole ? 'Authorized Staff' : 'University Staff'),
+    roleName: roleMap.get(roleId)?.name || (hasFullRole ? 'Authorized Staff' : 'Ticket Staff'),
     accessScope: hasFullRole ? 'full' : 'school_tickets',
   };
 }
