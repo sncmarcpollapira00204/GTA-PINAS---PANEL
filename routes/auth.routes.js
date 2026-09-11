@@ -100,12 +100,16 @@ pageRouter.get('/discord/callback', loginRateLimit, async (req, res) => {
   const oauthError = String(req.query.error || '');
   const cookieState = authService.getOAuthStateCookie(req);
   const cookieRedirectUri = authService.getOAuthRedirectCookie(req);
-  const redirectUri = authService.getRedirectUri(req, cookieRedirectUri);
 
   authService.clearOAuthStateCookie(res);
   authService.clearOAuthRedirectCookie(res);
 
   try {
+    // Resolve the redirect URI inside the protected callback flow so a malformed
+    // Railway/OAuth configuration is converted into the normal login error page
+    // instead of escaping as an Express 500.
+    const redirectUri = authService.getRedirectUri(req, cookieRedirectUri);
+
     if (oauthError) {
       throw new authService.AuthError('access_denied', 'Discord authorization was cancelled.', 401);
     }
@@ -114,14 +118,12 @@ pageRouter.get('/discord/callback', loginRateLimit, async (req, res) => {
       throw new authService.AuthError('invalid_state', 'The Discord login state was invalid or expired.', 401);
     }
 
-    // Prevent duplicate browser callbacks from exchanging the same one-time code.
     if (!reserveCallbackCode(code)) {
       throw new authService.AuthError('oauth_expired', 'This Discord authorization code was already used.', 401);
     }
 
     const user = await panelAuthService.authenticateAuthorizationCode(code, redirectUri);
 
-    // Management removals override role-based and direct env permissions.
     if (await staffManagement.isPanelAccessRevoked(user.id)) {
       const error = new authService.AuthError(
         'not_authorized',
@@ -160,6 +162,8 @@ pageRouter.get('/discord/callback', loginRateLimit, async (req, res) => {
         discordError: error.discordError || null,
         discordDescription: error.discordDescription || null,
       },
+    }).catch((logError) => {
+      console.warn('[AUTH CALLBACK LOGGING]', logError.message);
     });
 
     return res.redirect(loginErrorRedirect(codeName));
