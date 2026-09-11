@@ -20,7 +20,7 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix4-preview`;
+const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix5`;
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 let httpServer = null;
 let cleanupTimer = null;
@@ -45,6 +45,11 @@ function removeNavItemsByLabel(html, labels) {
   });
 }
 
+function removeWhitelistNavigation(html) {
+  // Remove the entire Whitelist dropdown in the server-rendered template.
+  return html.replace(/\s*<div\b[^>]*class=["'][^"']*nav-dropdown[^"']*["'][^>]*data-nav-group=["']whitelist["'][^>]*>[\s\S]*?<\/div>\s*<\/div>/gi, '');
+}
+
 function removeEmptyManagementGroup(html) {
   return html.replace(/<div\b[^>]*data-nav-group=["']management["'][^>]*>[\s\S]*?<\/div>/gi, group => {
     const remainingItems = group.match(/<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*>/gi);
@@ -56,6 +61,7 @@ function injectEmbedEditorNav(html) {
   const embedNav = `                        <a class="nav-item" data-target="view-donation-embed-editor" title="Embed Editor" href="#">\n                            <i data-lucide="square-pen" size="18"></i><span class="nav-label">Embed Editor</span>\n                        </a>`;
   let result = removeNavItemsByLabel(html, ['Embed Editor', 'Staff', 'Backup Center']);
   result = removeEmptyManagementGroup(result);
+  result = removeWhitelistNavigation(result);
 
   const dashboardPattern = /(<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*data-target=["']view-dashboard["'][^>]*>[\s\S]*?<\/a>)/i;
   if (dashboardPattern.test(result)) return result.replace(dashboardPattern, `$1\n${embedNav}`);
@@ -127,7 +133,6 @@ app.use('/assets', express.static(path.join(PUBLIC_DIR, 'assets'), {
   maxAge: '7d',
   setHeaders: (res, filePath) => {
     if (/\.(?:js|css)$/i.test(filePath)) {
-      // Revalidate executable assets on every page load so an old UI layer cannot survive a deploy.
       res.setHeader('Cache-Control', 'no-cache, max-age=0, must-revalidate');
       return;
     }
@@ -249,5 +254,7 @@ app.get(['/', '/index.html'], requirePageAuth, (req, res, next) => { if (!pageTe
 app.use((req, res) => req.originalUrl.startsWith('/api/') ? res.status(404).json({ error: 'API endpoint not found.', requestId: req.requestId }) : req.auth?.user ? res.redirect('/') : res.redirect('/login'));
 app.use((error, req, res, next) => { if (res.headersSent) return next(error); const bodyParserError = error?.type === 'entity.too.large' || error instanceof SyntaxError; const requestedStatus = Number(error?.statusCode || error?.status); const status = error?.type === 'entity.too.large' ? 413 : error instanceof SyntaxError ? 400 : Number.isInteger(requestedStatus) && requestedStatus >= 400 && requestedStatus < 600 ? requestedStatus : 500; if (status >= 500) console.error(`[REQUEST ERROR ${req.requestId}]`, error); const message = bodyParserError ? (status === 413 ? 'Request body is too large.' : 'Request body contains invalid JSON.') : status === 404 ? 'Resource not found.' : status < 500 ? 'Request could not be completed.' : 'Internal server error.'; return res.status(status).json({ error: message, requestId: req.requestId }); });
 async function startServer() { if (shuttingDown) return; try { await pool.initSchema(); await authService.initAuthTables(); await loadPageTemplates(); await mediaSettingsService.initializeStorage(); ready = true; httpServer = app.listen(PORT, HOST, () => console.log(`[WEB PANEL] GTA Pinas panel listening on ${HOST}:${PORT}.`)); cleanupTimer = setInterval(() => authService.cleanupExpiredSessions().catch(() => {}), 15 * 60 * 1000); cleanupTimer.unref?.(); } catch (error) { console.error('[WEB PANEL STARTUP FAILED]', error); process.exitCode = 1; } }
-async function shutdown(signal) { if (shuttingDown) return; shuttingDown = true; if (cleanupTimer) clearInterval(cleanupTimer); if (httpServer) await new Promise((resolve) => httpServer.close(resolve)); await pool.end().catch(() => {}); console.log(`[WEB PANEL] Shutdown complete (${signal}).`); }
-process.on('SIGINT', () => shutdown('SIGINT')); process.on('SIGTERM', () => shutdown('SIGTERM')); if (require.main === module) startServer();
+async function shutdown(signal) { if (shuttingDown) return; shuttingDown = true; if (cleanupTimer) clearInterval(cleanupTimer); if (httpServer) await new Promise(resolve => httpServer.close(resolve)); await pool.end?.().catch?.(() => {}); console.log(`[WEB PANEL] Shutdown via ${signal}.`); }
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+startServer();
