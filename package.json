@@ -4,7 +4,7 @@
   "private": true,
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node -r ./services/startup-ticket-sync.js server.js",
     "check": "node scripts/validate.js server.js",
     "test": "node --test test/*.test.js",
     "verify": "npm run check && npm test"
