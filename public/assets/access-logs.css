@@ -152,3 +152,9 @@ body.transcript-workspace-active #view-transcripts .transcript-workspace{
         grid-template-columns:1fr!important;
     }
 }
+
+/* Keep the dashboard brand logo fully visible instead of cropping logo.png. */
+.sidebar-header .logo{
+    object-fit:contain!important;
+    object-position:center!important;
+}
