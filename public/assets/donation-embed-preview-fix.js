@@ -1,171 +1,147 @@
 (() => {
   'use strict';
 
-  function normalize(value) {
-    return String(value || '')
-      .replace(/\*\*/g, '')
-      .replace(/__/g, '')
-      .replace(/~~/g, '')
-      .replace(/^#{1,3}\s+/, '')
-      .trim()
-      .toLowerCase();
-  }
-
-  function stripDuplicateTitleFromTextarea() {
-    const titleEl = document.getElementById('dee-title');
-    const descriptionEl = document.getElementById('dee-description');
-    if (!titleEl || !descriptionEl) return false;
-
-    const title = normalize(titleEl.value);
-    if (!title) return false;
-
-    const lines = String(descriptionEl.value || '').split('\n');
-    let first = 0;
-    while (first < lines.length && !lines[first].trim()) first += 1;
-    if (first >= lines.length) return false;
-
-    const line = lines[first].trim();
-    const match = line.match(/^>\s*(#{1,3}\s+)?(.*?)\s*$/);
-    if (!match || normalize(match[2]) !== title) return false;
-
-    lines.splice(first, 1);
-    while (first < lines.length && !lines[first].trim()) lines.splice(first, 1);
-    descriptionEl.value = lines.join('\n');
-    return true;
-  }
-
-  function sanitizeOutgoingPayload(payload) {
-    if (!payload?.embed || typeof payload.embed !== 'object') return payload;
-    const next = { ...payload, embed: { ...payload.embed } };
-    const title = normalize(next.embed.title);
-    if (!title || !next.embed.description) return next;
-
-    const lines = String(next.embed.description).split('\n');
-    let first = 0;
-    while (first < lines.length && !lines[first].trim()) first += 1;
-    if (first >= lines.length) return next;
-
-    const line = lines[first].trim();
-    const match = line.match(/^>\s*(#{1,3}\s+)?(.*?)\s*$/);
-    if (!match || normalize(match[2]) !== title) return next;
-
-    lines.splice(first, 1);
-    while (first < lines.length && !lines[first].trim()) lines.splice(first, 1);
-    next.embed.description = lines.join('\n');
-    return next;
-  }
-
-  function patchFetch() {
-    if (window.__gtaDonationFetchPatchedV2) return;
-    window.__gtaDonationFetchPatchedV2 = true;
-    const originalFetch = window.fetch.bind(window);
-
-    window.fetch = (input, init = {}) => {
-      const url = typeof input === 'string' ? input : input?.url || '';
-      const method = String(init.method || (typeof input !== 'string' ? input?.method : '') || 'GET').toUpperCase();
-      if (!/\/api\/donation\/(?:embed|message)(?:$|\?)/.test(String(url)) || !['POST', 'PATCH'].includes(method) || typeof init.body !== 'string') {
-        return originalFetch(input, init);
-      }
-
-      try {
-        const payload = sanitizeOutgoingPayload(JSON.parse(init.body));
-        init = { ...init, body: JSON.stringify(payload) };
-      } catch (_) {}
-
-      return originalFetch(input, init);
-    };
-  }
-
-  function compactQuoteBlocks(description) {
-    const children = Array.from(description.childNodes);
-
-    for (let i = 0; i < children.length; i += 1) {
-      const current = children[i];
-      if (!(current.nodeType === Node.ELEMENT_NODE && current.classList.contains('dh-quote'))) continue;
-
-      let cursor = current.nextSibling;
-      while (cursor) {
-        const next = cursor.nextSibling;
-
-        if (cursor.nodeType === Node.ELEMENT_NODE && cursor.tagName === 'BR') {
-          cursor.remove();
-          cursor = next;
-          continue;
-        }
-
-        if (cursor.nodeType === Node.ELEMENT_NODE && cursor.classList.contains('dh-quote')) {
-          const line = document.createElement('span');
-          line.className = 'dh-quote-line';
-          while (cursor.firstChild) line.appendChild(cursor.firstChild);
-          current.appendChild(document.createElement('br'));
-          current.appendChild(line);
-          cursor.remove();
-          cursor = next;
-          continue;
-        }
-
-        break;
-      }
-    }
-  }
+  const STYLE_ID = 'gta-discord-preview-final-spacing';
 
   function installStyles() {
-    if (document.getElementById('gta-preview-spacing-fix')) return;
+    if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
-    style.id = 'gta-preview-spacing-fix';
+    style.id = STYLE_ID;
     style.textContent = `
-      .dh-description > .dh-quote {
+      .dh-description .dh-preview-quote-group {
         display:block !important;
+        border-left:4px solid #4e5058 !important;
         margin:0 !important;
-        padding:1px 0 1px 10px !important;
+        padding:0 0 0 8px !important;
         line-height:19px !important;
-        min-height:19px !important;
+        box-sizing:border-box;
       }
-      .dh-description > .dh-quote + br,
-      .dh-description > br:has(+ .dh-quote) {
-        display:none !important;
-      }
-      .dh-description > .dh-quote .dh-quote-line {
+      .dh-description .dh-preview-quote-group .dh-quote {
         display:block !important;
+        border:0 !important;
         margin:0 !important;
         padding:0 !important;
+        min-height:19px !important;
         line-height:19px !important;
       }
-      .dh-description > .dh-quote.dh-markdown-heading,
-      .dh-description > .dh-quote.dh-markdown-heading-1,
-      .dh-description > .dh-quote.dh-markdown-heading-2,
-      .dh-description > .dh-quote.dh-markdown-heading-3 {
+      .dh-description .dh-preview-quote-group .dh-quote + br {
+        display:none !important;
+      }
+      .dh-description .dh-preview-heading {
+        display:block !important;
+        font-weight:700 !important;
+        font-size:16px !important;
+        line-height:21px !important;
         margin:0 !important;
-        padding-top:1px !important;
-        padding-bottom:1px !important;
+        padding:0 !important;
+      }
+      .dh-description > br.dh-preview-section-gap {
+        display:block !important;
+        height:19px !important;
+        line-height:19px !important;
+        content:"";
       }
     `;
     document.head.appendChild(style);
   }
 
+  function prepareQuote(quote) {
+    if (quote.dataset.previewPrepared === '1') return;
+    quote.dataset.previewPrepared = '1';
+
+    const raw = String(quote.textContent || '').trim();
+    const match = raw.match(/^#{1,3}\s+(.+)$/s);
+    if (match) {
+      quote.classList.add('dh-preview-heading');
+      quote.textContent = match[1].trim();
+    }
+  }
+
+  function rebuild(container) {
+    const children = Array.from(container.childNodes);
+    if (!children.some((node) => node.nodeType === Node.ELEMENT_NODE && node.classList.contains('dh-quote'))) return;
+
+    const fragment = document.createDocumentFragment();
+    let i = 0;
+
+    while (i < children.length) {
+      const node = children[i];
+      const isQuote = node.nodeType === Node.ELEMENT_NODE && node.classList.contains('dh-quote');
+      if (!isQuote) {
+        fragment.appendChild(node);
+        i += 1;
+        continue;
+      }
+
+      const group = document.createElement('div');
+      group.className = 'dh-preview-quote-group';
+      let breakCountAfterLastQuote = 0;
+
+      while (i < children.length) {
+        const quote = children[i];
+        const quoteIsQuote = quote.nodeType === Node.ELEMENT_NODE && quote.classList.contains('dh-quote');
+        if (!quoteIsQuote) break;
+
+        prepareQuote(quote);
+        group.appendChild(quote);
+        i += 1;
+
+        breakCountAfterLastQuote = 0;
+        while (i < children.length && children[i].nodeType === Node.ELEMENT_NODE && children[i].tagName === 'BR') {
+          breakCountAfterLastQuote += 1;
+          i += 1;
+        }
+
+        const next = children[i];
+        const nextIsQuote = next?.nodeType === Node.ELEMENT_NODE && next.classList.contains('dh-quote');
+
+        // One newline keeps the quote block continuous. Two or more newlines
+        // separate Discord quote paragraphs with one visual blank line.
+        if (nextIsQuote && breakCountAfterLastQuote <= 1) continue;
+        break;
+      }
+
+      fragment.appendChild(group);
+
+      const next = children[i];
+      const nextIsQuote = next?.nodeType === Node.ELEMENT_NODE && next.classList.contains('dh-quote');
+      if (nextIsQuote && breakCountAfterLastQuote >= 2) {
+        const gap = document.createElement('br');
+        gap.className = 'dh-preview-section-gap';
+        fragment.appendChild(gap);
+      }
+    }
+
+    container.replaceChildren(fragment);
+  }
+
   function cleanup() {
     installStyles();
-    const changed = stripDuplicateTitleFromTextarea();
-    if (changed) document.getElementById('dee-description')?.dispatchEvent(new Event('input', { bubbles: true }));
-
-    document.querySelectorAll('#dee-preview .dh-description').forEach((description) => {
-      compactQuoteBlocks(description);
-    });
+    document.querySelectorAll('#dee-preview .dh-description').forEach(rebuild);
   }
 
   function boot() {
     installStyles();
-    patchFetch();
-    cleanup();
     const root = document.getElementById('view-donation-embed-editor');
     if (!root) return window.setTimeout(boot, 100);
 
-    root.addEventListener('click', (event) => {
-      if (event.target?.closest?.('#dee-load-button')) window.setTimeout(cleanup, 300);
-    }, true);
-    root.addEventListener('input', () => window.setTimeout(cleanup, 0), true);
+    let queued = false;
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(() => {
+        queued = false;
+        cleanup();
+      });
+    };
 
-    new MutationObserver(cleanup).observe(root, { childList:true, subtree:true });
+    root.addEventListener('input', schedule, true);
+    root.addEventListener('click', (event) => {
+      if (event.target?.closest?.('#dee-load-button,#dee-reset,#dee-preview-button')) window.setTimeout(schedule, 120);
+    }, true);
+
+    new MutationObserver(schedule).observe(root, { childList:true, subtree:true });
+    schedule();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once:true });
