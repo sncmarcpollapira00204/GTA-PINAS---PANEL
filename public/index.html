@@ -5135,27 +5135,31 @@ html[data-theme="navy"] {
             }
         }
 
-        function resetStuckInteractiveLayers() {
+        function resetStuckInteractiveLayers(force = false) {
             const mobileOverlay = document.getElementById('mobile-sidebar-overlay');
             const ticketOverlay = document.getElementById('side-panel-overlay');
             const ticketPanel = document.getElementById('side-panel');
             const profileLayer = document.getElementById('whitelist-profile-dialog-layer');
 
+            if (force) {
+                document.body.classList.remove('mobile-sidebar-open');
+            }
+
             if (!document.body.classList.contains('mobile-sidebar-open')) {
                 mobileOverlay?.setAttribute('aria-hidden', 'true');
             }
-            if (!ticketPanel?.classList.contains('open')) {
+            if (force || !ticketPanel?.classList.contains('open')) {
                 ticketOverlay?.classList.remove('active');
             }
-            if (profileLayer?.hidden || profileLayer?.getAttribute('aria-hidden') === 'true') {
+            if (force || profileLayer?.hidden || profileLayer?.getAttribute('aria-hidden') === 'true') {
                 profileLayer.hidden = true;
                 profileLayer.setAttribute('aria-hidden', 'true');
                 document.body.classList.remove('whitelist-profile-dialog-open');
             }
         }
 
-        window.addEventListener('pageshow', event => {
-            if (event.persisted) resetStuckInteractiveLayers();
+        window.addEventListener('pageshow', () => {
+            resetStuckInteractiveLayers(true);
         });
         window.addEventListener('resize', syncResponsivePanelState, { passive: true });
         window.addEventListener('orientationchange', syncResponsivePanelState, { passive: true });
