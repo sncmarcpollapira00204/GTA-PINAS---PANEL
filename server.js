@@ -20,7 +20,7 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix5`;
+const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix6`;
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 let httpServer = null;
 let cleanupTimer = null;
@@ -50,18 +50,67 @@ function removeWhitelistNavigation(html) {
   return html.replace(/\s*<div\b[^>]*class=["'][^"']*nav-dropdown[^"']*["'][^>]*data-nav-group=["']whitelist["'][^>]*>[\s\S]*?<\/div>\s*<\/div>/gi, '');
 }
 
-function removeEmptyManagementGroup(html) {
-  return html.replace(/<div\b[^>]*data-nav-group=["']management["'][^>]*>[\s\S]*?<\/div>/gi, group => {
-    const remainingItems = group.match(/<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*>/gi);
-    return remainingItems?.length ? group : '';
-  });
+function removeOwnerOnlyAttributesFromTarget(html, targetIds) {
+  const ids = targetIds.map(String);
+  const targetPattern = ids.join('|');
+  const elementPattern = new RegExp(
+    `(<(?:a|section)\\b(?=[^>]*\\b(?:data-target|id)=["'](?:${targetPattern})["'])[^>]*?)\\s+data-owner-only(?:\\s*=\\s*["'][^"']*["'])?`,
+    'gi'
+  );
+  let result = html.replace(elementPattern, '$1');
+
+  const hiddenPattern = new RegExp(
+    `(<(?:a|section)\\b(?=[^>]*\\b(?:data-target|id)=["'](?:${targetPattern})["'])[^>]*?)\\s+hidden\\b`,
+    'gi'
+  );
+  result = result.replace(hiddenPattern, '$1');
+  return result;
+}
+
+function injectManagementNavigation(html) {
+  const managementNav = `
+            <div class="nav-dropdown" data-nav-group="management">
+                <button class="nav-dropdown-toggle" type="button" aria-expanded="false" aria-controls="nav-management-menu" onclick="toggleSidebarGroup('management')" title="Management">
+                    <i data-lucide="settings-2" size="18"></i>
+                    <span class="nav-dropdown-title nav-label">Management</span>
+                    <i class="nav-dropdown-chevron" data-lucide="chevron-down" size="16"></i>
+                </button>
+                <div id="nav-management-menu" class="nav-dropdown-menu">
+                    <div class="nav-dropdown-menu-inner">
+                        <a class="nav-item" data-target="view-import" title="Import Center">
+                            <i data-lucide="cloud-download" size="18"></i><span class="nav-label">Import Center</span>
+                        </a>
+                        <a class="nav-item" data-target="view-access-logs" title="Access Logs">
+                            <i data-lucide="shield-ellipsis" size="18"></i><span class="nav-label">Access Logs</span>
+                        </a>
+                        <a class="nav-item" data-target="view-settings" title="Settings">
+                            <i data-lucide="settings" size="18"></i><span class="nav-label">Settings</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+`;
+
+  // Replace any old/partial Management dropdown all the way up to the sidebar footer.
+  const managementBlockPattern = /\s*<div\b[^>]*class=["'][^"']*nav-dropdown[^"']*["'][^>]*data-nav-group=["']management["'][^>]*>[\s\S]*?(?=\s*<div\s+class=["']sidebar-bottom["'])/i;
+  if (managementBlockPattern.test(html)) {
+    return html.replace(managementBlockPattern, `\n${managementNav}`);
+  }
+
+  // Fallback: place Management immediately before the sidebar footer.
+  return html.replace(/(?=\s*<div\s+class=["']sidebar-bottom["'])/i, `\n${managementNav}`);
 }
 
 function injectEmbedEditorNav(html) {
   const embedNav = `                        <a class="nav-item" data-target="view-donation-embed-editor" title="Embed Editor" href="#">\n                            <i data-lucide="square-pen" size="18"></i><span class="nav-label">Embed Editor</span>\n                        </a>`;
-  let result = removeNavItemsByLabel(html, ['Embed Editor', 'Staff', 'Backup Center']);
-  result = removeEmptyManagementGroup(result);
+  let result = removeNavItemsByLabel(html, ['Embed Editor', 'Staff', 'Staff Performance', 'Backup Center']);
   result = removeWhitelistNavigation(result);
+  result = result.replace(/\s*<div\b[^>]*class=["'][^"']*nav-subsection-label[^"']*["'][^>]*data-owner-only[^>]*>[\s\S]*?<\/div>/gi, '');
+  result = injectManagementNavigation(result);
+
+  // These three workspaces are intentionally available from Management and must
+  // not be hidden by the legacy owner-only UI flags.
+  result = removeOwnerOnlyAttributesFromTarget(result, ['view-import', 'view-access-logs', 'view-settings']);
 
   const dashboardPattern = /(<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*data-target=["']view-dashboard["'][^>]*>[\s\S]*?<\/a>)/i;
   if (dashboardPattern.test(result)) return result.replace(dashboardPattern, `$1\n${embedNav}`);
