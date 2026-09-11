@@ -20,7 +20,7 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const NORMAL_BODY_LIMIT = process.env.NORMAL_BODY_LIMIT || '1mb';
-const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix6`;
+const PANEL_ASSET_VERSION = `${process.env.PANEL_ASSET_VERSION || '20260910-gta-pinas'}-navfix7`;
 const SLOW_REQUEST_MS = Math.max(250, Number(process.env.SLOW_REQUEST_MS || 1500));
 let httpServer = null;
 let cleanupTimer = null;
@@ -50,23 +50,6 @@ function removeWhitelistNavigation(html) {
   return html.replace(/\s*<div\b[^>]*class=["'][^"']*nav-dropdown[^"']*["'][^>]*data-nav-group=["']whitelist["'][^>]*>[\s\S]*?<\/div>\s*<\/div>/gi, '');
 }
 
-function removeOwnerOnlyAttributesFromTarget(html, targetIds) {
-  const ids = targetIds.map(String);
-  const targetPattern = ids.join('|');
-  const elementPattern = new RegExp(
-    `(<(?:a|section)\\b(?=[^>]*\\b(?:data-target|id)=["'](?:${targetPattern})["'])[^>]*?)\\s+data-owner-only(?:\\s*=\\s*["'][^"']*["'])?`,
-    'gi'
-  );
-  let result = html.replace(elementPattern, '$1');
-
-  const hiddenPattern = new RegExp(
-    `(<(?:a|section)\\b(?=[^>]*\\b(?:data-target|id)=["'](?:${targetPattern})["'])[^>]*?)\\s+hidden\\b`,
-    'gi'
-  );
-  result = result.replace(hiddenPattern, '$1');
-  return result;
-}
-
 function injectManagementNavigation(html) {
   const managementNav = `
             <div class="nav-dropdown" data-nav-group="management">
@@ -77,10 +60,10 @@ function injectManagementNavigation(html) {
                 </button>
                 <div id="nav-management-menu" class="nav-dropdown-menu">
                     <div class="nav-dropdown-menu-inner">
-                        <a class="nav-item" data-target="view-import" title="Import Center">
+                        <a class="nav-item" data-target="view-import" title="Import Center" data-owner-only hidden>
                             <i data-lucide="cloud-download" size="18"></i><span class="nav-label">Import Center</span>
                         </a>
-                        <a class="nav-item" data-target="view-access-logs" title="Access Logs">
+                        <a class="nav-item" data-target="view-access-logs" title="Access Logs" data-owner-only hidden>
                             <i data-lucide="shield-ellipsis" size="18"></i><span class="nav-label">Access Logs</span>
                         </a>
                         <a class="nav-item" data-target="view-settings" title="Settings">
@@ -107,10 +90,6 @@ function injectEmbedEditorNav(html) {
   result = removeWhitelistNavigation(result);
   result = result.replace(/\s*<div\b[^>]*class=["'][^"']*nav-subsection-label[^"']*["'][^>]*data-owner-only[^>]*>[\s\S]*?<\/div>/gi, '');
   result = injectManagementNavigation(result);
-
-  // These three workspaces are intentionally available from Management and must
-  // not be hidden by the legacy owner-only UI flags.
-  result = removeOwnerOnlyAttributesFromTarget(result, ['view-import', 'view-access-logs', 'view-settings']);
 
   const dashboardPattern = /(<a\b[^>]*class=["'][^"']*nav-item[^"']*["'][^>]*data-target=["']view-dashboard["'][^>]*>[\s\S]*?<\/a>)/i;
   if (dashboardPattern.test(result)) return result.replace(dashboardPattern, `$1\n${embedNav}`);
