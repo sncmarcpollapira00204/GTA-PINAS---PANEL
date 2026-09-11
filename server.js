@@ -84,7 +84,7 @@ async function loadPageTemplates() {
   const scriptTags = [
     `<script defer src="/assets/admin-name-rotator.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/ticket-ui-cleanup.js?v=${PANEL_ASSET_VERSION}"></script>`,
-    '<script defer src="/assets/simple-panel-ui.js?v=20260806-1"></script>',
+    `<script defer src="/assets/simple-panel-ui.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/import-center-source-of-truth.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/auto-ticket-sync.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/transcript-collapse-fix.js?v=${PANEL_ASSET_VERSION}"></script>`,
@@ -92,7 +92,7 @@ async function loadPageTemplates() {
     `<script defer src="/assets/open-ticket-discord.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/media-branding.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/logo-render-fix-inline.js?v=${PANEL_ASSET_VERSION}"></script>`,
-    '<script defer src="/assets/manage-staff.js?v=20260816-3"></script>',
+    `<script defer src="/assets/manage-staff.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/donation-embed-editor.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/donation-embed-preview-fix.js?v=${PANEL_ASSET_VERSION}"></script>`,
     `<script defer src="/assets/donation-embed-discohook-preview.js?v=${PANEL_ASSET_VERSION}"></script>`,
@@ -121,7 +121,19 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/assets', express.static(path.join(PUBLIC_DIR, 'assets'), { index: false, fallthrough: false, maxAge: '7d', setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400') }));
+app.use('/assets', express.static(path.join(PUBLIC_DIR, 'assets'), {
+  index: false,
+  fallthrough: false,
+  maxAge: '7d',
+  setHeaders: (res, filePath) => {
+    if (/\.(?:js|css)$/i.test(filePath)) {
+      // Revalidate executable assets on every page load so an old UI layer cannot survive a deploy.
+      res.setHeader('Cache-Control', 'no-cache, max-age=0, must-revalidate');
+      return;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+  },
+}));
 app.use('/media', mediaRoutes);
 app.use(loadAuthentication);
 app.get('/favicon.ico', (req, res) => res.status(204).end());
