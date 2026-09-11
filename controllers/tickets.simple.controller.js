@@ -35,7 +35,7 @@ function parseTicketDetails(details) {
 
 function buildDefaultDiscordAvatar(userId) {
   const id = String(userId || '').trim();
-  if (!/^\d{15,22}$/.test(id)) return null;
+  if (!/^\\d{15,22}$/.test(id)) return null;
   try {
     const index = Number((BigInt(id) >> 22n) % 6n);
     return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
@@ -117,7 +117,7 @@ exports.getTickets = async (req, res) => {
       LEFT JOIN staff claimed ON t.claimed_by = claimed.id
       LEFT JOIN staff closed ON t.closed_by = closed.id
       WHERE (
-        (t.status = 'open' AND COALESCE(t.import_source, 'live') IN ('live', 'discord_open_import'))
+        t.status = 'open'
         OR (t.status = 'closed' AND t.transcript_channel_id = ANY($1::text[]))
       )
     `;
@@ -165,7 +165,7 @@ exports.getTickets = async (req, res) => {
           t.updated_at
         FROM tickets t
         WHERE (
-          (t.status = 'open' AND COALESCE(t.import_source, 'live') IN ('live', 'discord_open_import'))
+          t.status = 'open'
           OR (t.status = 'closed' AND t.transcript_channel_id = ANY($1::text[]))
         )
       `;
