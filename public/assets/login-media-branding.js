@@ -24,7 +24,7 @@
     });
 
     document.querySelectorAll('.brand img').forEach((img) => {
-      img.src = '/assets/gta-pinas-logo.svg';
+      img.src = '/assets/logo.png';
       img.alt = 'GTA Pinas Roleplay';
       img.removeAttribute('srcset');
       Object.assign(img.style, {
