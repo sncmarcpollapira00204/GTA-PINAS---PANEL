@@ -2,10 +2,11 @@
 
 const { PANEL_OWNER_USER_ID, getAuthenticatedUserId } = require('./owner.middleware');
 
+// Keep management permissions aligned with GTA-Pinas-Bot's current Owner/Executive roles.
 const STAFF_PERFORMANCE_ROLE_IDS = new Set([
-  '1501546329682346064',
-  '1501546391082766416',
-  '1501546425492836393',
+  '1525460665198968832',
+  '1525460819381587988',
+  '1525472827896102922',
 ]);
 
 function canAccessStaffPerformance(req) {
@@ -13,7 +14,6 @@ function canAccessStaffPerformance(req) {
   const userId = getAuthenticatedUserId(req);
   const roles = Array.isArray(user.roles) ? user.roles.map(String) : [];
 
-  // The configured panel owner keeps emergency access to prevent lockout.
   return userId === PANEL_OWNER_USER_ID || roles.some((roleId) => STAFF_PERFORMANCE_ROLE_IDS.has(roleId));
 }
 
