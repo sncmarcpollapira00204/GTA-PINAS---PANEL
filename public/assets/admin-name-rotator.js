@@ -47,211 +47,98 @@
         const style = document.createElement('style');
         style.id = 'admin-name-rotator-styles';
         style.textContent = `
-            /* Shared top-bar alignment */
             .top-nav-left {
                 display: flex !important;
                 align-items: center !important;
-                min-width: 0 !important;
-                gap: 12px !important;
             }
-
-            /* Modern registered-handler pill */
             .server-identity.registered-handler-badge {
-                position: relative !important;
-                width: min(460px, 42vw) !important;
-                min-width: 220px !important;
-                max-width: 460px !important;
-                height: 36px !important;
-                min-height: 36px !important;
-                flex: 0 1 auto !important;
-
-                display: inline-flex !important;
+                width: 209px !important;
+                height: 31px !important;
+                min-width: 209px !important;
+                max-width: 209px !important;
+                flex: 0 0 209px !important;
+                display: grid !important;
+                grid-template-columns: 88px minmax(0, 1fr) !important;
                 align-items: center !important;
-                gap: 9px !important;
-
-                padding: 0 12px 0 11px !important;
-                margin: 0 !important;
+                column-gap: 7px !important;
+                padding: 0 10px !important;
                 box-sizing: border-box !important;
                 overflow: hidden !important;
-
-                border: 1px solid rgba(255,255,255,.10) !important;
-                border-radius: 10px !important;
-
-                background:
-                    linear-gradient(
-                        180deg,
-                        rgba(255,255,255,.055),
-                        rgba(255,255,255,.025)
-                    ) !important;
-
-                box-shadow:
-                    inset 0 1px 0 rgba(255,255,255,.035),
-                    0 4px 14px rgba(0,0,0,.18) !important;
-
-                color: var(--text-main) !important;
-                backdrop-filter: blur(12px) !important;
-                -webkit-backdrop-filter: blur(12px) !important;
-                transform: translateZ(0) !important;
-                transition: border-color .2s ease, background .2s ease, box-shadow .2s ease !important;
+                border: 1px solid #263037 !important;
+                border-radius: 7px !important;
+                background: #0b141b !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
             }
-
-            .server-identity.registered-handler-badge:hover {
-                border-color: rgba(59,130,246,.36) !important;
-                background:
-                    linear-gradient(
-                        180deg,
-                        rgba(255,255,255,.065),
-                        rgba(255,255,255,.03)
-                    ) !important;
-                box-shadow:
-                    inset 0 1px 0 rgba(255,255,255,.04),
-                    0 6px 18px rgba(0,0,0,.22),
-                    0 0 0 1px rgba(59,130,246,.05) !important;
-            }
-
-            /* Online indicator */
-            .server-identity.registered-handler-badge::before {
-                content: '';
-                width: 7px;
-                height: 7px;
-                flex: 0 0 7px;
-                border-radius: 50%;
-                background: #22C55E;
-                box-shadow:
-                    0 0 0 3px rgba(34,197,94,.10),
-                    0 0 10px rgba(34,197,94,.28);
-            }
-
-            /* Label tag */
             .server-identity.registered-handler-badge strong {
-                position: relative !important;
                 min-width: 0 !important;
-                flex: 0 0 auto !important;
-                margin: 0 !important;
-                padding: 4px 7px !important;
-
-                color: #8E9BAD !important;
-                font-family: 'Inter', sans-serif !important;
-                font-size: 7px !important;
-                font-weight: 800 !important;
-                line-height: 1 !important;
-                letter-spacing: .10em !important;
-                text-align: center !important;
-                text-transform: uppercase !important;
-                white-space: nowrap !important;
-
-                border: 1px solid rgba(255,255,255,.07) !important;
-                border-radius: 6px !important;
-                background: rgba(255,255,255,.035) !important;
-            }
-
-            /* Thin separator between label and current handler */
-            .server-identity.registered-handler-badge::after {
-                content: '';
-                width: 1px;
-                height: 16px;
-                flex: 0 0 1px;
-                background: rgba(255,255,255,.10);
-                margin-left: 0;
-                margin-right: -1px;
-            }
-
-            /* Dynamic handler username • role */
-            .server-identity.registered-handler-badge span {
-                min-width: 0 !important;
-                width: auto !important;
-                flex: 1 1 auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
-
                 overflow: hidden !important;
-                text-overflow: ellipsis !important;
-                white-space: nowrap !important;
-
-                color: #F4F7FB !important;
+                color: #919da9 !important;
                 font-family: 'Inter', sans-serif !important;
-                font-size: 10px !important;
+                font-size: 6.35px !important;
                 font-weight: 700 !important;
-                line-height: 1.1 !important;
-                letter-spacing: -.01em !important;
+                line-height: 1 !important;
+                letter-spacing: .82px !important;
                 text-align: left !important;
-                text-transform: none !important;
-
-                transform: none !important;
-                transform-origin: left center !important;
+                text-overflow: clip !important;
+                text-transform: uppercase !important;
+                white-space: nowrap !important;
             }
-
+            .server-identity.registered-handler-badge span {
+                --handler-font-size: 9px;
+                --handler-scale: 1;
+                min-width: 0 !important;
+                width: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+                color: #f5f7fa !important;
+                font-family: 'Inter', sans-serif !important;
+                font-size: var(--handler-font-size) !important;
+                font-weight: 700 !important;
+                line-height: 1 !important;
+                letter-spacing: -.08px !important;
+                text-align: left !important;
+                text-overflow: clip !important;
+                text-transform: none !important;
+                transform: scaleX(var(--handler-scale)) !important;
+                transform-origin: left center !important;
+                white-space: nowrap !important;
+            }
             .admin-name-rotator {
                 display: block;
-                max-width: 100%;
                 transition: opacity ${FADE_DURATION_MS}ms ease, transform ${FADE_DURATION_MS}ms ease;
                 will-change: opacity, transform;
             }
-
             .admin-name-rotator.is-changing {
                 opacity: 0;
-                transform: translateY(2px) !important;
+                transform: translateY(2px) scaleX(var(--handler-scale)) !important;
             }
-
             .admin-name-rotator.is-visible {
                 animation: admin-name-blink 520ms ease;
             }
-
             @keyframes admin-name-blink {
                 0%, 100% { opacity: 1; }
-                45% { opacity: .28; }
+                45% { opacity: 0.28; }
             }
-
-            /* Respect the final top-nav height and prevent edge clipping. */
-            .top-nav .server-identity.registered-handler-badge {
-                align-self: center !important;
-            }
-
-            @media (max-width: 900px) {
-                .server-identity.registered-handler-badge {
-                    width: min(390px, 58vw) !important;
-                    max-width: 390px !important;
-                }
-            }
-
             @media (max-width: 620px) {
                 .server-identity.registered-handler-badge {
-                    width: min(250px, calc(100vw - 92px)) !important;
+                    width: min(209px, calc(100vw - 88px)) !important;
                     min-width: 0 !important;
-                    max-width: calc(100vw - 92px) !important;
-                    height: 34px !important;
-                    min-height: 34px !important;
-                    padding: 0 9px !important;
-                    gap: 7px !important;
-                    border-radius: 9px !important;
-                }
-
-                .server-identity.registered-handler-badge strong {
-                    font-size: 6px !important;
-                    letter-spacing: .08em !important;
-                    padding: 4px 6px !important;
-                }
-
-                .server-identity.registered-handler-badge span {
-                    font-size: 9px !important;
-                }
-            }
-
-            @media (max-width: 480px) {
-                .server-identity.registered-handler-badge strong {
-                    display: none !important;
-                }
-
-                .server-identity.registered-handler-badge::after {
-                    display: none;
-                }
-
-                .server-identity.registered-handler-badge {
-                    width: min(205px, calc(100vw - 88px)) !important;
                     max-width: calc(100vw - 88px) !important;
+                    flex-basis: auto !important;
+                    grid-template-columns: 82px minmax(0, 1fr) !important;
+                    column-gap: 6px !important;
+                    padding: 0 8px !important;
+                }
+                .server-identity.registered-handler-badge strong {
+                    font-size: 5.9px !important;
+                    letter-spacing: .68px !important;
                 }
             }
-
             @media (prefers-reduced-motion: reduce) {
                 .admin-name-rotator {
                     transition: none;
@@ -260,6 +147,57 @@
             }
         `;
         document.head.appendChild(style);
+    }
+
+    function preferredFontSize(text) {
+        const length = String(text || '').length;
+        if (length <= 16) return 9;
+        if (length <= 20) return 8.6;
+        if (length <= 24) return 8.1;
+        if (length <= 29) return 7.5;
+        return 7;
+    }
+
+    function fitHandlerText(target, text) {
+        const fontSize = preferredFontSize(text);
+        target.style.setProperty('--handler-font-size', `${fontSize}px`);
+        target.style.setProperty('--handler-scale', '1');
+
+        window.requestAnimationFrame(() => {
+            const availableWidth = target.clientWidth;
+            const neededWidth = target.scrollWidth;
+            if (!availableWidth || neededWidth <= availableWidth) return;
+
+            const scale = Math.min(1, availableWidth / neededWidth);
+            target.style.setProperty('--handler-scale', scale.toFixed(3));
+        });
+    }
+
+    function setTargetText(target, text) {
+        target.textContent = text;
+        fitHandlerText(target, text);
+    }
+
+    function setRotatingText(text, animate = false) {
+        const targets = getRotatingTargets();
+        if (!targets.length) return;
+
+        targets.forEach((target) => {
+            target.classList.add('admin-name-rotator');
+            if (!animate) {
+                setTargetText(target, text);
+                return;
+            }
+
+            target.classList.add('is-changing');
+            window.setTimeout(() => {
+                setTargetText(target, text);
+                target.classList.remove('is-changing');
+                target.classList.remove('is-visible');
+                void target.offsetWidth;
+                target.classList.add('is-visible');
+            }, FADE_DURATION_MS);
+        });
     }
 
     function displayName(profile) {
@@ -339,37 +277,6 @@
         }
 
         startRotation();
-    }
-
-    function fitHandlerText(target, text) {
-        target.title = text || '';
-    }
-
-    function setTargetText(target, text) {
-        target.textContent = text;
-        fitHandlerText(target, text);
-    }
-
-    function setRotatingText(text, animate = false) {
-        const targets = getRotatingTargets();
-        if (!targets.length) return;
-
-        targets.forEach((target) => {
-            target.classList.add('admin-name-rotator');
-            if (!animate) {
-                setTargetText(target, text);
-                return;
-            }
-
-            target.classList.add('is-changing');
-            window.setTimeout(() => {
-                setTargetText(target, text);
-                target.classList.remove('is-changing');
-                target.classList.remove('is-visible');
-                void target.offsetWidth;
-                target.classList.add('is-visible');
-            }, FADE_DURATION_MS);
-        });
     }
 
     function init() {
