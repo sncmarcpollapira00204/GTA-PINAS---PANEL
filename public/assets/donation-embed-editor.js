@@ -51,6 +51,7 @@
       .gta-user{display:flex;align-items:center;gap:9px;margin-bottom:12px}.gta-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#5865f2;color:#fff;font-size:10px;font-weight:800}.gta-user strong{font-size:11px}.gta-user span{display:block;margin-top:2px;color:#949ba4;font-size:9px}
       .gta-embed{max-width:560px;background:#2b2d31;border-left:4px solid #5865f2;border-radius:4px;padding:12px;color:#dbdee1;min-height:90px;box-sizing:border-box}
       .gta-embed h3{font-size:16px;margin:0 0 6px}.gta-embed p{font-size:11px;white-space:pre-wrap;line-height:1.55;margin:0}.gta-embed img{max-width:100%;border-radius:4px;margin-top:9px;display:block}.gta-embed .thumb{float:right;width:76px;height:76px;object-fit:cover;margin:0 0 7px 9px}.gta-embed small{display:block;margin-top:10px;color:#949ba4}
+      .gta-embed .text-xl{font-size:20px;line-height:1.3}.gta-embed .font-bold{font-weight:700}.gta-embed .my-1{margin-top:.25rem;margin-bottom:.25rem}
       @media(max-width:920px){.gta-dee-grid{grid-template-columns:1fr}.gta-dee-preview{position:static}}
       @media(max-width:620px){.gta-dee-form{grid-template-columns:1fr}.gta-dee-field.full{grid-column:auto}.gta-dee-link{grid-template-columns:1fr}.gta-dee-link button{width:100%}.gta-dee-actions{flex-direction:column}.gta-dee-actions .btn{width:100%}}
     `;
@@ -76,6 +77,12 @@
     el.className = `gta-dee-status ${type}`.trim();
   }
 
+  function renderMarkdown(value) {
+    const escaped = esc(value);
+    const withHeadings = escaped.replace(/^#\s+(.+)$/gm, '<h1 class="text-xl font-bold my-1">$1</h1>');
+    return withHeadings.replace(/\n/g, '<br>');
+  }
+
   function preview() {
     const box = document.getElementById('dee-preview');
     if (!box) return;
@@ -83,14 +90,14 @@
     const color = /^#[0-9a-f]{6}$/i.test(data.color) ? data.color : '#5865F2';
     const image = safeUrl(data.image);
     const thumb = safeUrl(data.thumbnail);
-    const description = esc(data.description).replace(/\n/g, '<br>');
+    const description = renderMarkdown(data.description);
     box.innerHTML = `
       <div class="gta-user"><div class="gta-avatar">GP</div><div><strong>GTA Pinas Treasury</strong><span>Today</span></div></div>
       <div class="gta-embed" style="border-left-color:${esc(color)}">
         ${thumb ? `<img class="thumb" src="${esc(thumb)}" alt="">` : ''}
         ${data.author ? `<div style="font-size:10px;font-weight:700;margin-bottom:7px">${esc(data.author)}</div>` : ''}
         ${data.title ? `<h3>${esc(data.title)}</h3>` : ''}
-        <p>${description || '<span style="color:#949ba4">Start typing to preview the embed.</span>'}</p>
+        <div class="gta-preview-description">${description || '<span style="color:#949ba4">Start typing to preview the embed.</span>'}</div>
         ${image ? `<img src="${esc(image)}" alt="">` : ''}
         ${data.footer ? `<small>${esc(data.footer)}</small>` : ''}
       </div>`;
