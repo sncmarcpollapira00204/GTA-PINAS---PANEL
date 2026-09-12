@@ -47,75 +47,121 @@
         const style = document.createElement('style');
         style.id = 'admin-name-rotator-styles';
         style.textContent = `
+            /* Center the header content; the badge itself stays content-sized. */
+            .top-nav {
+                justify-content: center !important;
+                align-items: center !important;
+            }
             .top-nav-left {
                 display: flex !important;
                 align-items: center !important;
+                justify-content: center !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                gap: 12px !important;
             }
+            .top-nav-left .server-identity.registered-handler-badge {
+                margin-inline: auto !important;
+            }
+            #mobile-menu-toggle {
+                flex: 0 0 auto !important;
+            }
+
+            /* Compact content-width registered handler badge. */
             .server-identity.registered-handler-badge {
-                width: 209px !important;
-                height: 31px !important;
-                min-width: 209px !important;
-                max-width: 209px !important;
-                flex: 0 0 209px !important;
-                display: grid !important;
-                grid-template-columns: 88px minmax(0, 1fr) !important;
+                position: relative !important;
+                display: inline-flex !important;
                 align-items: center !important;
-                column-gap: 7px !important;
-                padding: 0 10px !important;
+                justify-content: center !important;
+                width: max-content !important;
+                max-width: min(90vw, 520px) !important;
+                min-width: 0 !important;
+                flex: 0 0 auto !important;
+                align-self: center !important;
                 box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 5px 14px !important;
+                gap: 8px !important;
                 overflow: hidden !important;
-                border: 1px solid #263037 !important;
-                border-radius: 7px !important;
-                background: #0b141b !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 999px !important;
+                background: var(--bg-card) !important;
+                color: var(--text-main) !important;
                 box-shadow: none !important;
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
             }
+
             .server-identity.registered-handler-badge strong {
+                flex: 0 0 auto !important;
                 min-width: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 overflow: hidden !important;
-                color: #919da9 !important;
+                color: var(--text-sec) !important;
                 font-family: 'Inter', sans-serif !important;
-                font-size: 6.35px !important;
+                font-size: 7px !important;
                 font-weight: 700 !important;
                 line-height: 1 !important;
-                letter-spacing: .82px !important;
+                letter-spacing: .09em !important;
                 text-align: left !important;
-                text-overflow: clip !important;
                 text-transform: uppercase !important;
                 white-space: nowrap !important;
             }
+
             .server-identity.registered-handler-badge span {
                 --handler-font-size: 9px;
                 --handler-scale: 1;
                 min-width: 0 !important;
                 width: auto !important;
+                max-width: min(360px, 55vw) !important;
+                flex: 0 1 auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                overflow: visible !important;
-                color: #f5f7fa !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                color: var(--text-main) !important;
                 font-family: 'Inter', sans-serif !important;
                 font-size: var(--handler-font-size) !important;
                 font-weight: 700 !important;
                 line-height: 1 !important;
-                letter-spacing: -.08px !important;
+                letter-spacing: -.02em !important;
                 text-align: left !important;
-                text-overflow: clip !important;
                 text-transform: none !important;
-                transform: scaleX(var(--handler-scale)) !important;
+                transform: none !important;
                 transform-origin: left center !important;
                 white-space: nowrap !important;
             }
+
+            /* Subtle separator without enlarging the badge into a banner. */
+            .server-identity.registered-handler-badge::before {
+                content: '';
+                width: 5px;
+                height: 5px;
+                flex: 0 0 5px;
+                border-radius: 50%;
+                background: var(--success);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 10%, transparent);
+            }
+
+            .server-identity.registered-handler-badge::after {
+                content: '';
+                width: 1px;
+                height: 13px;
+                flex: 0 0 1px;
+                margin: 0 1px;
+                background: var(--border);
+            }
+
             .admin-name-rotator {
                 display: block;
+                max-width: 100%;
                 transition: opacity ${FADE_DURATION_MS}ms ease, transform ${FADE_DURATION_MS}ms ease;
                 will-change: opacity, transform;
             }
             .admin-name-rotator.is-changing {
                 opacity: 0;
-                transform: translateY(2px) scaleX(var(--handler-scale)) !important;
+                transform: translateY(2px) !important;
             }
             .admin-name-rotator.is-visible {
                 animation: admin-name-blink 520ms ease;
@@ -124,21 +170,44 @@
                 0%, 100% { opacity: 1; }
                 45% { opacity: 0.28; }
             }
-            @media (max-width: 620px) {
+
+            @media (max-width: 900px) {
                 .server-identity.registered-handler-badge {
-                    width: min(209px, calc(100vw - 88px)) !important;
-                    min-width: 0 !important;
-                    max-width: calc(100vw - 88px) !important;
-                    flex-basis: auto !important;
-                    grid-template-columns: 82px minmax(0, 1fr) !important;
-                    column-gap: 6px !important;
-                    padding: 0 8px !important;
+                    max-width: min(84vw, 420px) !important;
+                    padding: 5px 12px !important;
                 }
-                .server-identity.registered-handler-badge strong {
-                    font-size: 5.9px !important;
-                    letter-spacing: .68px !important;
+                .server-identity.registered-handler-badge span {
+                    max-width: 46vw !important;
                 }
             }
+
+            @media (max-width: 620px) {
+                .top-nav-left {
+                    gap: 8px !important;
+                }
+                .server-identity.registered-handler-badge {
+                    max-width: calc(100vw - 88px) !important;
+                    padding: 5px 10px !important;
+                    gap: 7px !important;
+                }
+                .server-identity.registered-handler-badge strong {
+                    font-size: 6px !important;
+                }
+                .server-identity.registered-handler-badge span {
+                    max-width: calc(100vw - 170px) !important;
+                    font-size: 8px !important;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .server-identity.registered-handler-badge strong {
+                    display: none !important;
+                }
+                .server-identity.registered-handler-badge::after {
+                    display: none !important;
+                }
+            }
+
             @media (prefers-reduced-motion: reduce) {
                 .admin-name-rotator {
                     transition: none;
