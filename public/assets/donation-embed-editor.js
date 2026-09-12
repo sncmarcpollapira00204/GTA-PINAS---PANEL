@@ -21,7 +21,7 @@
       .gta-dee-toolbar{display:flex;gap:4px;padding:5px;border:1px solid var(--border);border-bottom:0;border-radius:7px 7px 0 0;background:var(--bg-card)}.gta-dee-toolbar button{width:28px;height:27px;border:0;border-radius:5px;background:transparent;color:var(--text-main);cursor:pointer;font-size:12px;font-weight:700}.gta-dee-toolbar button:hover{background:rgba(88,101,242,.16)}.gta-dee-toolbar button.active{background:rgba(88,101,242,.24)}
       .gta-dee-actions{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}.gta-dee-actions .btn{min-width:140px}.gta-dee-status{min-height:17px;margin-top:8px;font-size:10px;color:var(--text-sec)}.gta-dee-status.success{color:var(--success)}.gta-dee-status.error{color:var(--danger)}.gta-dee-linked{margin-top:5px;font-size:9px;color:var(--success);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gta-dee-preview{position:sticky;top:14px}
       .gta-discord{background:#313338;border-radius:9px;padding:15px;min-height:360px}.gta-user{display:flex;align-items:center;gap:9px;margin-bottom:12px}.gta-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#5865f2;color:#fff;font-size:10px;font-weight:800}.gta-user strong{font-size:11px}.gta-user span{display:block;margin-top:2px;color:#949ba4;font-size:9px}.gta-embed{max-width:560px;background:#2b2d31;border-left:4px solid #5865f2;border-radius:4px;padding:12px;color:#dbdee1;min-height:90px;box-sizing:border-box}.gta-embed h3{font-size:16px;margin:0 0 6px}.gta-embed img{max-width:100%;border-radius:4px;margin-top:9px;display:block}.gta-embed .thumb{float:right;width:76px;height:76px;object-fit:cover;margin:0 0 7px 9px}.gta-embed small{display:block;margin-top:10px;color:#949ba4}
-      .gta-preview-description{font-size:11px;line-height:1.55;word-break:break-word}.gta-preview-description strong{font-weight:700}.gta-preview-description em{font-style:italic}.gta-preview-description u{text-decoration:underline}.gta-preview-description s{text-decoration:line-through}.gta-preview-description code{background:#1e1f22;border:1px solid #3f4147;border-radius:3px;padding:1px 4px;font-family:Consolas,monospace;font-size:10px}.gta-preview-description pre{margin:4px 0;overflow:auto}.gta-preview-description blockquote{border-left:4px solid #4e5058;margin:2px 0;padding-left:8px;color:#dbdee1}.gta-preview-description .gta-spoiler{background:#202225;color:transparent;border-radius:3px;padding:0 2px;cursor:pointer}.gta-preview-description .gta-spoiler.revealed{color:#dbdee1}.gta-preview-description h1{margin:4px 0 2px;font-size:1.25rem;font-weight:700;line-height:1.2}
+      .gta-preview-description{font-size:11px;line-height:1.55;word-break:break-word}.gta-preview-description strong{font-weight:700}.gta-preview-description em{font-style:italic}.gta-preview-description u{text-decoration:underline}.gta-preview-description s{text-decoration:line-through}.gta-preview-description code{background:#1e1f22;border:1px solid #3f4147;border-radius:3px;padding:1px 4px;font-family:Consolas,monospace;font-size:10px}.gta-preview-description pre{margin:4px 0;overflow:auto}.gta-preview-description blockquote{border-left:4px solid #4e5058;margin:4px 0;padding:2px 0 2px 8px;color:#dbdee1}.gta-preview-description .gta-spoiler{background:#202225;color:transparent;border-radius:3px;padding:0 2px;cursor:pointer}.gta-preview-description .gta-spoiler.revealed{color:#dbdee1}.gta-preview-description h1{margin:4px 0 2px;font-size:1.25rem;font-weight:700;line-height:1.2}
       @media(max-width:920px){.gta-dee-grid{grid-template-columns:1fr}.gta-dee-preview{position:static}}@media(max-width:620px){.gta-dee-form{grid-template-columns:1fr}.gta-dee-field.full{grid-column:auto}.gta-dee-link{grid-template-columns:1fr}.gta-dee-link button{width:100%}.gta-dee-actions{flex-direction:column}.gta-dee-actions .btn{width:100%}}
     `; document.head.appendChild(style);
   }
@@ -32,7 +32,7 @@
   function parseDiscordMarkdown(text){
     if(!text)return ''; let safe=esc(text); const protectedParts=[];
     const protect=(html)=>{const token=`\u0001${protectedParts.length}\u0002`;protectedParts.push(html);return token;};
-    let lines=safe.split('\n').map((line)=>{
+    let lines=safe.split(/\r?\n/).map((line)=>{
       const heading=line.match(/^(#{1,3})\s(.+)$/); if(heading){const level=heading[1].length;const size={1:'1.25rem',2:'1.1rem',3:'1rem'}[level];return `<h${level} style="margin:4px 0 2px;font-size:${size};font-weight:700;line-height:1.2">${heading[2]}</h${level}>`;}
       if(/^>\s?/.test(line))return `<blockquote>${line.replace(/^>\s?/,'')}</blockquote>`; return line;
     });
@@ -66,7 +66,32 @@
   async function loadExisting(){const input=document.getElementById('dee-message-url');const url=String(input?.value||'').trim();if(!url)return setStatus('Paste a Discord message link first.','error');setStatus('Loading embed...');try{const response=await fetch(`/api/donation/message?url=${encodeURIComponent(url)}`,{credentials:'same-origin',cache:'no-store'});const payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload.message||payload.error||'Failed to load embed.');fill(payload);state.linkedMessageUrl=url;const linked=document.getElementById('dee-linked');if(linked)linked.textContent=payload.channel?.name?`Linked: #${payload.channel.name}`:'Existing message linked';const update=document.getElementById('dee-update-button');if(update)update.style.display='';setStatus('Embed loaded. You can edit and update it.','success');}catch(error){setStatus(error.message,'error');}}
   async function send(){const channelId=document.getElementById('dee-channel')?.value;if(!channelId)return setStatus('Select a donation channel first.','error');setStatus('Sending embed...');try{const response=await fetch('/api/donation/embed',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({channelId,embed:getData()})});const payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload.message||payload.error||'Failed to send embed.');setStatus('Embed sent successfully.','success');}catch(error){setStatus(error.message,'error');}}
   async function updateExisting(){if(!state.linkedMessageUrl)return setStatus('Load an existing Discord message first.','error');setStatus('Updating existing embed...');try{const response=await fetch('/api/donation/message',{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({messageUrl:state.linkedMessageUrl,embed:getData(),preserve:state.preserve})});const payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload.message||payload.error||'Failed to update embed.');setStatus('Existing embed updated successfully.','success');}catch(error){setStatus(error.message,'error');}}
-  function formatText(kind){const area=document.getElementById('dee-description');if(!area)return;const start=area.selectionStart||0,end=area.selectionEnd||0,text=area.value.slice(start,end);if(!text)return;if(kind==='quote'){const quoted=text.split('\n').map((line)=>`> ${line}`).join('\n');area.setRangeText(quoted,start,end,'select');}else{const wraps={bold:['**','**'],italic:['*','*'],underline:['__','__'],strike:['~~','~~'],code:['`','`'],spoiler:['||','||']};const pair=wraps[kind];if(!pair)return;area.setRangeText(`${pair[0]}${text}${pair[1]}`,start,end,'select');}area.dispatchEvent(new Event('input',{bubbles:true}));}
+  function formatText(kind){
+    const area=document.getElementById('dee-description');
+    if(!area)return;
+    let start=area.selectionStart||0;
+    let end=area.selectionEnd||0;
+    if(start===end){
+      const lineStart=area.value.lastIndexOf('\n',start-1)+1;
+      const lineEnd=area.value.indexOf('\n',start);
+      start=lineStart;
+      end=lineEnd===-1?area.value.length:lineEnd;
+    }
+    const text=area.value.slice(start,end);
+    if(!text)return;
+    if(kind==='quote'){
+      const lines=text.split(/\r?\n/);
+      const allQuoted=lines.every((line)=>/^>\s?/.test(line));
+      const quoted=allQuoted?lines.map((line)=>line.replace(/^>\s?/,'')).join('\n'):lines.map((line)=>`> ${line}`).join('\n');
+      area.setRangeText(quoted,start,end,'select');
+    }else{
+      const wraps={bold:['**','**'],italic:['*','*'],underline:['__','__'],strike:['~~','~~'],code:['`','`'],spoiler:['||','||']};
+      const pair=wraps[kind];
+      if(!pair)return;
+      area.setRangeText(`${pair[0]}${text}${pair[1]}`,start,end,'select');
+    }
+    area.dispatchEvent(new Event('input',{bubbles:true}));
+  }
   function ensureNav(){const nav=document.querySelector('.nav-links');if(!nav)return;let item=nav.querySelector('[data-target="view-donation-embed-editor"]');if(!item){item=document.createElement('a');item.className='nav-item';item.dataset.target='view-donation-embed-editor';item.href='#';item.title='Embed Editor';item.innerHTML='<i data-lucide="square-pen" size="18"></i><span class="nav-label">Embed Editor</span>';nav.appendChild(item);}if(item.dataset.gtaEmbedBound==='true')return;item.dataset.gtaEmbedBound='true';item.addEventListener('click',(event)=>{event.preventDefault();event.stopPropagation();activate();},true);if(window.renderPanelIcons)window.renderPanelIcons({root:item});}
   window.openDonationEmbedEditor=activate;function init(){styles();ensureNav();}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
