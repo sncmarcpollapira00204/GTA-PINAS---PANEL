@@ -1,6 +1,7 @@
 const pool = require('../db');
 const config = require('../config.json');
 const staffConfig = require('../ticket-staff.js');
+const { syncOpenTicketsFromDiscord } = require('../services/discordOpenTickets.service');
 
 const currentTranscriptIds = [
   ...Object.values(config.transcriptChannels || {}),
@@ -8,6 +9,7 @@ const currentTranscriptIds = [
   config.importSources?.transcriptChannelId,
 ].filter(Boolean).map(String).filter((value, index, array) => array.indexOf(value) === index);
 const configuredStaffCount = Array.isArray(staffConfig.ticketAssignOptions) ? staffConfig.ticketAssignOptions.length : 0;
+const configuredGuildId = String(config.guildId || '').trim();
 
 const DASHBOARD_CACHE_MS = 5000;
 const TICKETS_CACHE_MS = 10000;
@@ -44,28 +46,39 @@ function buildDashboardPayload(stats) {
 }
 
 async function queryDashboard() {
+  // Reconcile the database against the actual Discord ticket channels before
+  // calculating the dashboard numbers. The sync is internally rate-limited.
+  await syncOpenTicketsFromDiscord(false);
+
   try {
     const result = await pool.query(`
       SELECT
-        COUNT(*) FILTER (WHERE status = 'open')::INTEGER AS open_tickets,
-        COUNT(*) FILTER (WHERE status = 'closed' AND transcript_channel_id = ANY($1::text[]))::INTEGER AS closed_tickets,
-        COUNT(*) FILTER (WHERE status IN ('open','closed') AND (status = 'open' OR transcript_channel_id = ANY($1::text[])))::INTEGER AS total_tickets,
+        COUNT(*) FILTER (WHERE guild_id = $1 AND status = 'open')::INTEGER AS open_tickets,
+        COUNT(*) FILTER (WHERE guild_id = $1 AND status = 'closed' AND transcript_channel_id = ANY($2::text[]))::INTEGER AS closed_tickets,
+        COUNT(*) FILTER (
+          WHERE guild_id = $1
+            AND status IN ('open','closed')
+            AND (
+              status = 'open'
+              OR transcript_channel_id = ANY($2::text[])
+            )
+        )::INTEGER AS total_tickets,
         MAX(COALESCE(updated_at, last_activity_at, closed_at, created_at)) AS tickets_version,
-        $2::INTEGER AS staff_registered
+        $3::INTEGER AS staff_registered
       FROM tickets
-    `, [currentTranscriptIds, configuredStaffCount]);
+    `, [configuredGuildId, currentTranscriptIds, configuredStaffCount]);
     return buildDashboardPayload(result.rows[0] || {});
   } catch (primaryError) {
     console.error('[API DASHBOARD PRIMARY QUERY ERROR]', primaryError);
     const result = await pool.query(`
       SELECT
-        COUNT(*) FILTER (WHERE status = 'open')::INTEGER AS open_tickets,
-        COUNT(*) FILTER (WHERE status = 'closed')::INTEGER AS closed_tickets,
-        COUNT(*)::INTEGER AS total_tickets,
+        COUNT(*) FILTER (WHERE guild_id = $1 AND status = 'open')::INTEGER AS open_tickets,
+        COUNT(*) FILTER (WHERE guild_id = $1 AND status = 'closed')::INTEGER AS closed_tickets,
+        COUNT(*) FILTER (WHERE guild_id = $1)::INTEGER AS total_tickets,
         MAX(COALESCE(updated_at, last_activity_at, closed_at, created_at)) AS tickets_version,
-        $1::INTEGER AS staff_registered
+        $2::INTEGER AS staff_registered
       FROM tickets
-    `, [configuredStaffCount]);
+    `, [configuredGuildId, configuredStaffCount]);
     return buildDashboardPayload(result.rows[0] || {});
   }
 }
@@ -86,7 +99,7 @@ exports.getDashboardStats = async (req, res) => {
 };
 
 async function queryTickets(normalizedStatus) {
-  const values = [currentTranscriptIds];
+  const values = [currentTranscriptIds, configuredGuildId];
   let query = `
     SELECT
       t.*,
@@ -103,14 +116,15 @@ async function queryTickets(normalizedStatus) {
     LEFT JOIN staff assigned ON t.assigned_to = assigned.id
     LEFT JOIN staff claimed ON t.claimed_by = claimed.id
     LEFT JOIN staff closed ON t.closed_by = closed.id
-    WHERE (
-      t.status = 'open'
-      OR (t.status = 'closed' AND t.transcript_channel_id = ANY($1::text[]))
-    )
+    WHERE t.guild_id = $2
+      AND (
+        t.status = 'open'
+        OR (t.status = 'closed' AND t.transcript_channel_id = ANY($1::text[]))
+      )
   `;
   if (normalizedStatus) {
     values.push(normalizedStatus);
-    query += ' AND t.status = $2';
+    query += ' AND t.status = $3';
   }
   query += ' ORDER BY t.created_at DESC';
 
@@ -119,11 +133,11 @@ async function queryTickets(normalizedStatus) {
     return result.rows;
   } catch (primaryError) {
     console.error('[API TICKETS PRIMARY QUERY ERROR]', primaryError);
-    const fallbackValues = [];
-    let fallbackQuery = `SELECT t.* FROM tickets t WHERE 1=1`;
+    const fallbackValues = [configuredGuildId];
+    let fallbackQuery = `SELECT t.* FROM tickets t WHERE t.guild_id = $1`;
     if (normalizedStatus) {
       fallbackValues.push(normalizedStatus);
-      fallbackQuery += ' AND t.status = $1';
+      fallbackQuery += ' AND t.status = $2';
     }
     fallbackQuery += ' ORDER BY t.created_at DESC';
     const result = await pool.query(fallbackQuery, fallbackValues);
