@@ -1,10 +1,31 @@
 (() => {
   'use strict';
 
-  const STYLE_ID = 'gta-donation-preview-authoritative-styles';
-  const AUTHORITATIVE_ATTR = 'data-dh-authoritative';
+  /*
+   * Authoritative renderer for the Donation Embed Editor preview.
+   *
+   * This file intentionally renders the complete preview instead of trying
+   * to patch individual nodes produced by another renderer. That prevents
+   * headings, title, author, footer, images, and color from getting lost.
+   */
+
   const ROOT_ID = 'view-donation-embed-editor';
   const PREVIEW_ID = 'dee-preview';
+  const STYLE_ID = 'gta-donation-preview-authoritative-styles';
+  const AUTHORITATIVE_ATTR = 'data-dh-authoritative';
+
+  const INPUT_IDS = new Set([
+    'dee-title',
+    'dee-description',
+    'dee-color',
+    'dee-author',
+    'dee-footer',
+    'dee-image',
+    'dee-thumbnail',
+  ]);
+
+  let renderTimer = null;
+  let bootTimer = null;
 
   const esc = (value) => String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -13,17 +34,18 @@
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
-  const safeUrl = (value) => {
+  function safeUrl(value) {
     try {
       const url = new URL(String(value || '').trim());
       return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
     } catch (_) {
       return '';
     }
-  };
+  }
 
-  const normalizeColor = (value) => {
+  function normalizeColor(value) {
     const raw = String(value ?? '').trim();
+
     if (/^#[0-9a-f]{6}$/i.test(raw)) return raw;
 
     if (/^\d+$/.test(raw)) {
@@ -34,7 +56,7 @@
     }
 
     return '#5865F2';
-  };
+  }
 
   function installStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -42,7 +64,7 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      #${PREVIEW_ID} .gta-authoritative-discord-preview {
+      #${PREVIEW_ID} .gta-authoritative-preview {
         width: 100%;
         min-height: 100%;
         color: #dbdee1;
@@ -126,14 +148,6 @@
         word-break: break-word;
       }
 
-      #${PREVIEW_ID} .gta-preview-author img {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        object-fit: cover;
-        flex: 0 0 auto;
-      }
-
       #${PREVIEW_ID} .gta-preview-title {
         margin: 0 0 5px;
         color: #f2f3f5;
@@ -153,6 +167,7 @@
       #${PREVIEW_ID} .gta-preview-description h1,
       #${PREVIEW_ID} .gta-preview-description h2,
       #${PREVIEW_ID} .gta-preview-description h3 {
+        display: block;
         color: #f2f3f5;
         font-weight: 700;
         word-break: break-word;
@@ -176,20 +191,14 @@
         line-height: 20px;
       }
 
-      #${PREVIEW_ID} .gta-preview-description strong {
-        font-weight: 700;
-      }
+      #${PREVIEW_ID} .gta-preview-description strong { font-weight: 700; }
+      #${PREVIEW_ID} .gta-preview-description em { font-style: italic; }
+      #${PREVIEW_ID} .gta-preview-description u { text-decoration: underline; }
+      #${PREVIEW_ID} .gta-preview-description s { text-decoration: line-through; }
 
-      #${PREVIEW_ID} .gta-preview-description em {
-        font-style: italic;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description u {
-        text-decoration: underline;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description s {
-        text-decoration: line-through;
+      #${PREVIEW_ID} .gta-preview-link {
+        color: #00a8fc;
+        text-decoration: none;
       }
 
       #${PREVIEW_ID} .gta-preview-code {
@@ -203,8 +212,8 @@
       }
 
       #${PREVIEW_ID} .gta-preview-spoiler {
-        border-radius: 3px;
         padding: 0 2px;
+        border-radius: 3px;
         background: #202225;
         color: transparent;
         cursor: pointer;
@@ -212,11 +221,6 @@
 
       #${PREVIEW_ID} .gta-preview-spoiler:hover {
         color: #dbdee1;
-      }
-
-      #${PREVIEW_ID} .gta-preview-link {
-        color: #00a8fc;
-        text-decoration: none;
       }
 
       #${PREVIEW_ID} .gta-preview-quote {
@@ -259,14 +263,6 @@
         word-break: break-word;
       }
 
-      #${PREVIEW_ID} .gta-preview-footer img {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        object-fit: cover;
-        flex: 0 0 auto;
-      }
-
       #${PREVIEW_ID} .gta-preview-placeholder {
         color: #949ba4;
         font-size: 13px;
@@ -277,14 +273,10 @@
     document.head.appendChild(style);
   }
 
-  function getInput(id) {
-    return document.getElementById(id);
-  }
-
-  function getValue(id, fallback = '') {
-    const input = getInput(id);
-    if (!input) return fallback;
-    const value = String(input.value ?? '').trim();
+  function inputValue(id, fallback = '') {
+    const element = document.getElementById(id);
+    if (!element) return fallback;
+    const value = String(element.value ?? '').trim();
     return value || fallback;
   }
 
@@ -298,20 +290,20 @@
       return token;
     };
 
-    text = text.replace(/```([\s\S]*?)```/g, (_, code) => (
-      protect(`<pre style="margin:5px 0;padding:8px;border-radius:4px;background:#1e1f22;white-space:pre-wrap;font-family:Consolas,Monaco,monospace;font-size:12px;line-height:17px;overflow:auto"><code>${code.trim()}</code></pre>`)
+    text = text.replace(/```([\s\S]*?)```/g, (_, code) => protect(
+      `<pre style="margin:5px 0;padding:8px;border-radius:4px;background:#1e1f22;white-space:pre-wrap;font-family:Consolas,Monaco,monospace;font-size:12px;line-height:17px;overflow:auto"><code>${code.trim()}</code></pre>`
     ));
 
-    text = text.replace(/`([^`\n]+)`/g, (_, code) => (
-      protect(`<code class="gta-preview-code">${code}</code>`)
+    text = text.replace(/`([^`\n]+)`/g, (_, code) => protect(
+      `<code class="gta-preview-code">${code}</code>`
     ));
 
-    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => (
-      protect(`<a class="gta-preview-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`)
+    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => protect(
+      `<a class="gta-preview-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
     ));
 
-    text = text.replace(/\|\|([\s\S]*?)\|\|/g, (_, content) => (
-      protect(`<span class="gta-preview-spoiler">${content}</span>`)
+    text = text.replace(/\|\|([\s\S]*?)\|\|/g, (_, content) => protect(
+      `<span class="gta-preview-spoiler">${content}</span>`
     ));
 
     text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
@@ -319,9 +311,9 @@
     text = text.replace(/~~([^~\n]+)~~/g, '<s>$1</s>');
     text = text.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
 
-    text = text.replace(/\u0001(\d+)\u0002/g, (_, index) => protectedParts[Number(index)] || '');
-
-    return text;
+    return text.replace(/\u0001(\d+)\u0002/g, (_, index) => (
+      protectedParts[Number(index)] || ''
+    ));
   }
 
   function renderDescription(value) {
@@ -329,13 +321,13 @@
     if (!source) return '';
 
     return source.split('\n').map((line) => {
-      // Headings MUST be checked before normal inline Markdown.
-      // This strips the leading # symbols from the rendered output.
+      // Discord heading syntax is line-based: #, ##, or ### followed by a space.
+      // The regex removes the hashes from the output and keeps only the heading text.
       const heading = line.match(/^\s*(#{1,3})\s+(.+?)\s*$/);
       if (heading) {
         const level = heading[1].length;
-        const content = inlineMarkdown(heading[2]);
-        return `<h${level}>${content}</h${level}>`;
+        const headingText = inlineMarkdown(heading[2]);
+        return `<h${level}>${headingText}</h${level}>`;
       }
 
       const quote = line.match(/^\s*>\s?(.*)$/);
@@ -347,80 +339,69 @@
     }).join('<br>');
   }
 
-  function getEmbedData() {
-    const title = getValue('dee-title', 'Donation Price List');
-    const description = String(getInput('dee-description')?.value ?? '');
-    const color = normalizeColor(getValue('dee-color', '#2563EB'));
-    const author = getValue('dee-author', 'GTA Pinas Treasury');
-    const footer = getValue('dee-footer', 'GTA Pinas Treasury');
-    const image = safeUrl(getInput('dee-image')?.value || '');
-    const thumbnail = safeUrl(getInput('dee-thumbnail')?.value || '');
-
+  function getData() {
     return {
-      title,
-      description,
-      color,
-      author,
-      footer,
-      image,
-      thumbnail,
+      // Use the field's placeholder text as the initial preview value so the
+      // preview does not appear to ignore these configured defaults.
+      title: inputValue('dee-title', 'Donation Price List'),
+      description: String(document.getElementById('dee-description')?.value ?? ''),
+      color: normalizeColor(inputValue('dee-color', '#2563EB')),
+      author: inputValue('dee-author', 'GTA Pinas Treasury'),
+      footer: inputValue('dee-footer', 'GTA Pinas Treasury'),
+      image: safeUrl(document.getElementById('dee-image')?.value || ''),
+      thumbnail: safeUrl(document.getElementById('dee-thumbnail')?.value || ''),
     };
   }
 
-  function formatTime() {
-    return new Date().toLocaleTimeString([], {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  }
-
   function renderPreview() {
-    const box = getInput(PREVIEW_ID);
+    installStyles();
+
+    const box = document.getElementById(PREVIEW_ID);
     if (!box) return false;
 
-    const data = getEmbedData();
-    const descriptionHtml = renderDescription(data.description);
-
-    const thumbnailHtml = data.thumbnail
-      ? `<img class="gta-preview-thumb" src="${esc(data.thumbnail)}" alt="">`
-      : '';
+    const data = getData();
+    const description = renderDescription(data.description);
 
     const authorHtml = data.author
-      ? `<div class="gta-preview-author">${thumbnailHtml ? '' : ''}<span>${esc(data.author)}</span></div>`
+      ? `<div class="gta-preview-author">${esc(data.author)}</div>`
       : '';
 
     const titleHtml = data.title
       ? `<div class="gta-preview-title">${esc(data.title)}</div>`
       : '';
 
-    const descriptionBlock = descriptionHtml
-      ? `<div class="gta-preview-description">${descriptionHtml}</div>`
+    const thumbnailHtml = data.thumbnail
+      ? `<img class="gta-preview-thumb" src="${esc(data.thumbnail)}" alt="">`
       : '';
+
+    const descriptionHtml = description
+      ? `<div class="gta-preview-description">${description}</div>`
+      : `<div class="gta-preview-placeholder">Start typing to preview the embed.</div>`;
 
     const imageHtml = data.image
       ? `<img class="gta-preview-image" src="${esc(data.image)}" alt="">`
       : '';
 
     const footerHtml = data.footer
-      ? `<div class="gta-preview-footer"><span>${esc(data.footer)}</span></div>`
+      ? `<div class="gta-preview-footer">${esc(data.footer)}</div>`
       : '';
 
     box.innerHTML = `
-      <div class="gta-authoritative-discord-preview" ${AUTHORITATIVE_ATTR}="1">
+      <div class="gta-authoritative-preview" ${AUTHORITATIVE_ATTR}="1">
         <div class="gta-preview-message">
           <div class="gta-preview-avatar">GP</div>
           <div class="gta-preview-main">
             <div class="gta-preview-meta">
               <span class="gta-preview-username">GTA Pinas Treasury</span>
               <span class="gta-preview-bot">BOT</span>
-              <span class="gta-preview-time">Today at ${esc(formatTime())}</span>
+              <span class="gta-preview-time">Today at ${esc(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span>
             </div>
 
             <div class="gta-preview-embed" style="--gta-preview-accent:${esc(data.color)}">
               ${authorHtml}
               ${titleHtml}
               ${thumbnailHtml}
-              ${descriptionBlock}
+              ${descriptionHtml}
               ${imageHtml}
               ${footerHtml}
             </div>
@@ -431,39 +412,35 @@
     return true;
   }
 
-  function scheduleRender(delay = 0) {
-    window.clearTimeout(scheduleRender.timer);
-    scheduleRender.timer = window.setTimeout(() => {
+  function scheduleRender(delay = 100) {
+    window.clearTimeout(renderTimer);
+    renderTimer = window.setTimeout(() => {
       renderPreview();
     }, delay);
   }
 
-  function bindInputs(root) {
-    if (!root || root.dataset.gtaPreviewInputsBound === '1') return;
-    root.dataset.gtaPreviewInputsBound = '1';
+  function bindRoot(root) {
+    if (!root || root.dataset.gtaAuthoritativePreviewBound === '1') return;
+    root.dataset.gtaAuthoritativePreviewBound = '1';
 
-    const inputIds = [
-      'dee-title',
-      'dee-description',
-      'dee-color',
-      'dee-author',
-      'dee-footer',
-      'dee-image',
-      'dee-thumbnail',
-    ];
+    // Event delegation means dynamically-created editor inputs are supported too.
+    root.addEventListener('input', (event) => {
+      const target = event.target;
+      if (!target?.id || !INPUT_IDS.has(target.id)) return;
+      // Delay slightly so the other preview renderer cannot overwrite this
+      // authoritative render in the same input event/animation frame.
+      scheduleRender(100);
+    }, true);
 
-    inputIds.forEach((id) => {
-      const input = document.getElementById(id);
-      if (!input) return;
+    root.addEventListener('change', (event) => {
+      const target = event.target;
+      if (!target?.id || !INPUT_IDS.has(target.id)) return;
+      scheduleRender(100);
+    }, true);
 
-      input.addEventListener('input', () => scheduleRender(0));
-      input.addEventListener('change', () => scheduleRender(0));
-    });
-
-    // Refresh/Load/Reset can replace preview DOM or populate inputs programmatically.
     root.addEventListener('click', (event) => {
       if (event.target?.closest?.('#dee-load-button, #dee-reset, #dee-preview-button')) {
-        scheduleRender(180);
+        scheduleRender(250);
       }
     }, true);
   }
@@ -472,33 +449,19 @@
     installStyles();
 
     const root = document.getElementById(ROOT_ID);
-    if (!root) {
-      window.setTimeout(boot, 100);
+    if (root) {
+      bindRoot(root);
+      renderPreview();
+      window.clearTimeout(bootTimer);
       return;
     }
 
-    bindInputs(root);
-    renderPreview();
-
-    // The editor view is created dynamically. Re-bind when the view is rebuilt.
-    if (!boot.observer) {
-      boot.observer = new MutationObserver(() => {
-        const currentRoot = document.getElementById(ROOT_ID);
-        if (!currentRoot) return;
-
-        installStyles();
-        bindInputs(currentRoot);
-        scheduleRender(50);
-      });
-
-      boot.observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    }
+    // The Embed Editor is created dynamically by donation-embed-editor.js.
+    window.clearTimeout(bootTimer);
+    bootTimer = window.setTimeout(boot, 100);
   }
 
-  // Expose an explicit renderer for the editor and other panel code.
+  // Other panel code can explicitly request the authoritative renderer.
   window.__gtaRenderDonationEmbedPreview = renderPreview;
 
   if (document.readyState === 'loading') {
