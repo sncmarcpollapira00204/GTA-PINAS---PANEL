@@ -98,11 +98,14 @@ async function getMessageContext(messageUrl) {
 exports.getDonationChannels = async (req, res) => {
   try {
     const channels = await discordRequest(`/guilds/${encodeURIComponent(DONATION_GUILD_ID)}/channels`);
-    const allowed = channels.filter(channel => DONATION_CHANNEL_IDS.has(String(channel.id))).filter(channel => [0, 5].includes(Number(channel.type))).map(channel => ({ id: channel.id, name: channel.name, type: channel.type }));
+    const allowed = channels
+      .filter(channel => [0, 5].includes(Number(channel.type)))
+      .filter(channel => DONATION_CHANNEL_IDS.size === 0 || DONATION_CHANNEL_IDS.has(String(channel.id)))
+      .map(channel => ({ id: channel.id, name: channel.name, type: channel.type }));
     return res.json({ guildId: DONATION_GUILD_ID, channels: allowed });
   } catch (error) {
     console.error(`[DONATION EMBED ${req.requestId}]`, error);
-    return res.status(error.status || 500).json({ error: error.message || 'Unable to load donation channels.', code: error.code || 'DONATION_CHANNELS_FAILED' });
+    return res.status(error.status || 500).json({ error: error.message || 'Unable to load Discord channels.', code: error.code || 'DISCORD_CHANNELS_FAILED' });
   }
 };
 
@@ -128,12 +131,14 @@ exports.getMessage = async (req, res) => {
 
 exports.sendEmbed = async (req, res) => {
   try {
-    const channelId = String(req.body?.channelId || '').trim();
-    if (!DONATION_CHANNEL_IDS.has(channelId)) throw fail(403, 'That channel is not an approved GTA Pinas donation channel.', 'DONATION_CHANNEL_BLOCKED');
+    const channelId = text(req.body?.channelId, 32);
+    if (!/^\d{17,20}$/.test(channelId)) throw fail(400, 'Enter a valid Discord channel ID.', 'INVALID_CHANNEL_ID');
     const embed = normalizeEmbed(req.body?.embed || {}, req.body?.preserve || {});
     const channel = await discordRequest(`/channels/${encodeURIComponent(channelId)}`);
-    if (String(channel.guild_id || '') !== DONATION_GUILD_ID) throw fail(403, 'The selected channel does not belong to the GTA Pinas donation server.', 'DONATION_GUILD_MISMATCH');
-    if (![0, 5].includes(Number(channel.type))) throw fail(400, 'The selected donation destination is not a text channel.', 'INVALID_DONATION_CHANNEL');
+    if (DONATION_GUILD_ID && String(channel.guild_id || '') !== DONATION_GUILD_ID) {
+      throw fail(403, 'That channel does not belong to the configured GTA Pinas Discord server.', 'DONATION_GUILD_MISMATCH');
+    }
+    if (![0, 5].includes(Number(channel.type))) throw fail(400, 'The destination must be a text or announcement channel.', 'INVALID_DONATION_CHANNEL');
     const sent = await discordRequest(`/channels/${encodeURIComponent(channelId)}/messages`, { method: 'POST', body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }) });
     return res.status(201).json({ success: true, messageId: sent?.id || null, channel: { id: channel.id, name: channel.name } });
   } catch (error) {
