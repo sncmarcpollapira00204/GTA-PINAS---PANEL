@@ -156,15 +156,62 @@ async function upsertOpenTicket(channel, botUserId) {
   return true;
 }
 
+async function reconcileMissingOpenTickets(candidateChannelIds) {
+  const guildId = String(config.guildId || '').trim();
+  if (!guildId) return 0;
+
+  if (!candidateChannelIds.length) {
+    const result = await pool.query(
+      `UPDATE tickets
+       SET
+         status = 'closed',
+         closed_at = COALESCE(closed_at, CURRENT_TIMESTAMP),
+         close_reason = COALESCE(close_reason, 'Discord ticket channel no longer exists'),
+         import_source = CASE
+           WHEN import_source = 'discord_live_sync' THEN 'discord_reconciled'
+           ELSE import_source
+         END,
+         updated_at = CURRENT_TIMESTAMP
+       WHERE guild_id = $1
+         AND status = 'open'
+         AND channel_id IS NOT NULL`,
+      [guildId]
+    );
+    return result.rowCount || 0;
+  }
+
+  const result = await pool.query(
+    `UPDATE tickets
+     SET
+       status = 'closed',
+       closed_at = COALESCE(closed_at, CURRENT_TIMESTAMP),
+       close_reason = COALESCE(close_reason, 'Discord ticket channel no longer exists'),
+       import_source = CASE
+         WHEN import_source = 'discord_live_sync' THEN 'discord_reconciled'
+         ELSE import_source
+       END,
+       updated_at = CURRENT_TIMESTAMP
+     WHERE guild_id = $1
+       AND status = 'open'
+       AND channel_id IS NOT NULL
+       AND NOT (channel_id = ANY($2::text[]))`,
+    [guildId, candidateChannelIds]
+  );
+
+  return result.rowCount || 0;
+}
+
 async function syncOpenTicketsFromDiscord(force = false) {
   const now = Date.now();
-  if (!force && lastSyncAt && now - lastSyncAt < SYNC_COOLDOWN_MS) return { synced: 0, skipped: true };
+  if (!force && lastSyncAt && now - lastSyncAt < SYNC_COOLDOWN_MS) return { synced: 0, closed: 0, skipped: true };
   if (syncPromise) return syncPromise;
 
   syncPromise = (async () => {
     const channels = await discordRequest(`/guilds/${String(config.guildId)}/channels`);
     const bot = await discordRequest('/users/@me').catch(() => null);
-    const candidates = Array.isArray(channels) ? channels.filter((channel) => classifyChannel(channel) && isTextChannel(channel)) : [];
+    const candidates = Array.isArray(channels)
+      ? channels.filter((channel) => classifyChannel(channel) && isTextChannel(channel))
+      : [];
 
     let synced = 0;
     for (const channel of candidates) {
@@ -175,12 +222,15 @@ async function syncOpenTicketsFromDiscord(force = false) {
       }
     }
 
+    const candidateChannelIds = candidates.map((channel) => String(channel.id)).filter(Boolean);
+    const closed = await reconcileMissingOpenTickets(candidateChannelIds);
+
     lastSyncAt = Date.now();
-    console.log(`[DISCORD TICKET SYNC] ${synced} open Discord ticket channel(s) checked.`);
-    return { synced, skipped: false };
+    console.log(`[DISCORD TICKET SYNC] ${synced} open Discord ticket channel(s) checked; ${closed} stale open ticket(s) reconciled.`);
+    return { synced, closed, skipped: false };
   })().catch((error) => {
     console.error('[DISCORD TICKET SYNC] Failed:', error.message);
-    return { synced: 0, skipped: false, error: error.message };
+    return { synced: 0, closed: 0, skipped: false, error: error.message };
   }).finally(() => {
     syncPromise = null;
   });
