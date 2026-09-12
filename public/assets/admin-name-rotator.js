@@ -61,9 +61,6 @@
                 min-width: 0 !important;
                 gap: 0 !important;
             }
-            .top-nav-left .server-identity.registered-handler-badge {
-                margin: 2px auto !important;
-            }
             #mobile-menu-toggle {
                 flex: 0 0 auto !important;
             }
@@ -80,8 +77,7 @@
                 flex: 0 1 auto !important;
                 align-self: center !important;
                 height: auto !important;
-                min-height: 28px !important;
-                margin: 2px auto !important;
+                margin: 0 !important;
                 padding: 4px 12px !important;
                 box-sizing: border-box !important;
                 overflow: hidden !important;
