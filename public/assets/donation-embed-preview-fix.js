@@ -7,6 +7,8 @@
   let renderTimer = null;
   let bootTimer = null;
   let boundRoot = null;
+  let previewObserver = null;
+  let isRendering = false;
 
   const esc = (value) => String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -112,10 +114,15 @@
         html += '<br>';
         return;
       }
-      const heading = line.match(/^\s*(#{1,3})\s+(.+?)\s*$/);
+      const heading = line.match(/^#\s+(.+)$/);
       if (heading) {
-        const level = heading[1].length;
-        html += `<h${level}>${inlineMarkdown(heading[2])}</h${level}>`;
+        html += `<h1>${inlineMarkdown(heading[1].trim())}</h1>`;
+        return;
+      }
+      const subheading = line.match(/^\s*(#{2,3})\s+(.+?)\s*$/);
+      if (subheading) {
+        const level = subheading[1].length;
+        html += `<h${level}>${inlineMarkdown(subheading[2])}</h${level}>`;
         return;
       }
       if (/^\s*>\s?/.test(line)) {
@@ -147,6 +154,7 @@
     const data = getData();
     const image = safeUrl(data.image);
     const thumb = safeUrl(data.thumbnail);
+    isRendering = true;
     box.setAttribute('data-dh-authoritative', '1');
     box.innerHTML = `
       <div class="gta-user"><div class="gta-avatar">GP</div><div><strong>GTA Pinas Treasury</strong><span>Today</span></div></div>
@@ -158,11 +166,25 @@
         ${image ? `<img class="gta-preview-image" src="${esc(image)}" alt="">` : ''}
         ${data.footer ? `<small class="gta-preview-footer">${esc(data.footer)}</small>` : ''}
       </div>`;
+    queueMicrotask(() => { isRendering = false; });
+  }
+
+  function watchPreview() {
+    const box = document.getElementById(PREVIEW_ID);
+    if (!box || previewObserver) return;
+    previewObserver = new MutationObserver(() => {
+      if (isRendering || box.getAttribute('data-dh-authoritative') !== '1') return;
+      if (!box.querySelector('.gta-preview-description')) scheduleRender(0);
+    });
+    previewObserver.observe(box, { childList: true, subtree: true });
   }
 
   function scheduleRender(delay = 100) {
     clearTimeout(renderTimer);
-    renderTimer = setTimeout(renderPreview, delay);
+    renderTimer = setTimeout(() => {
+      renderPreview();
+      watchPreview();
+    }, delay);
   }
 
   function syncColorControls(color, render = true) {
@@ -208,6 +230,7 @@
     if (boundRoot === root) return;
     boundRoot = root;
     enhanceColorControl(root);
+    watchPreview();
 
     root.addEventListener('input', (event) => {
       if (event.target.matches('#dee-title,#dee-description,#dee-author,#dee-footer,#dee-image,#dee-thumbnail')) {
