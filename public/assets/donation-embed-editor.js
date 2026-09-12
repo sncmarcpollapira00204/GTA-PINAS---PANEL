@@ -51,7 +51,8 @@
       .gta-user{display:flex;align-items:center;gap:9px;margin-bottom:12px}.gta-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#5865f2;color:#fff;font-size:10px;font-weight:800}.gta-user strong{font-size:11px}.gta-user span{display:block;margin-top:2px;color:#949ba4;font-size:9px}
       .gta-embed{max-width:560px;background:#2b2d31;border-left:4px solid #5865f2;border-radius:4px;padding:12px;color:#dbdee1;min-height:90px;box-sizing:border-box}
       .gta-embed h3{font-size:16px;margin:0 0 6px}.gta-embed p{font-size:11px;white-space:pre-wrap;line-height:1.55;margin:0}.gta-embed img{max-width:100%;border-radius:4px;margin-top:9px;display:block}.gta-embed .thumb{float:right;width:76px;height:76px;object-fit:cover;margin:0 0 7px 9px}.gta-embed small{display:block;margin-top:10px;color:#949ba4}
-      .gta-embed .text-xl{font-size:20px;line-height:1.3}.gta-embed .font-bold{font-weight:700}.gta-embed .my-1{margin-top:.25rem;margin-bottom:.25rem}
+      .gta-embed h1{font-size:20px;font-weight:700;line-height:1.3;margin:4px 0 2px}
+      .gta-embed .gta-preview-quote{display:block;border-left:3px solid #4e5058;padding-left:8px;margin:2px 0;line-height:1.45;font-size:11px;color:#dbdee1}
       @media(max-width:920px){.gta-dee-grid{grid-template-columns:1fr}.gta-dee-preview{position:static}}
       @media(max-width:620px){.gta-dee-form{grid-template-columns:1fr}.gta-dee-field.full{grid-column:auto}.gta-dee-link{grid-template-columns:1fr}.gta-dee-link button{width:100%}.gta-dee-actions{flex-direction:column}.gta-dee-actions .btn{width:100%}}
     `;
@@ -81,13 +82,24 @@
     if (!text) return '';
     const safeText = esc(text);
     const lines = safeText.split('\n');
-    return lines.map((line, index) => {
+    const output = [];
+
+    lines.forEach((line, index) => {
       if (line.startsWith('# ')) {
-        return `<h1 style="margin:4px 0 2px 0;font-size:1.25rem;font-weight:700;line-height:1.3;">${line.slice(2)}</h1>`;
+        output.push(`<h1>${line.slice(2)}</h1>`);
+        return;
       }
-      if (index === 0 || lines[index - 1].startsWith('# ')) return line;
-      return `<br>${line}`;
-    }).join('');
+
+      if (line.startsWith('> ')) {
+        output.push(`<blockquote class="gta-preview-quote">${line.slice(2)}</blockquote>`);
+        return;
+      }
+
+      if (index > 0) output.push('<br>');
+      output.push(line);
+    });
+
+    return output.join('');
   }
 
   function preview() {
