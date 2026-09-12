@@ -77,10 +77,16 @@
     el.className = `gta-dee-status ${type}`.trim();
   }
 
-  function renderMarkdown(value) {
-    const escaped = esc(value);
-    const withHeadings = escaped.replace(/^#\s+(.+)$/gm, '<h1 class="text-xl font-bold my-1">$1</h1>');
-    return withHeadings.replace(/\n/g, '<br>');
+  function parseDiscordMarkdown(text) {
+    if (!text) return '';
+    const safeText = esc(text);
+    const lines = safeText.split('\n').map((line) => {
+      if (line.startsWith('# ')) {
+        return `<h1 class="text-xl font-bold my-1">${line.slice(2)}</h1>`;
+      }
+      return line;
+    });
+    return lines.join('<br>');
   }
 
   function preview() {
@@ -90,7 +96,7 @@
     const color = /^#[0-9a-f]{6}$/i.test(data.color) ? data.color : '#5865F2';
     const image = safeUrl(data.image);
     const thumb = safeUrl(data.thumbnail);
-    const description = renderMarkdown(data.description);
+    const description = parseDiscordMarkdown(data.description);
     box.innerHTML = `
       <div class="gta-user"><div class="gta-avatar">GP</div><div><strong>GTA Pinas Treasury</strong><span>Today</span></div></div>
       <div class="gta-embed" style="border-left-color:${esc(color)}">
@@ -230,7 +236,7 @@
     if (!channelId) return setStatus('Select a donation channel first.', 'error');
     setStatus('Sending embed...');
     try {
-      const response = await fetch('/api/donation/embed', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ channelId, embed:getData() }) });
+      const response = await fetch('/api/donation/embed', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ channelId, embed:getData()}) });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.message || payload.error || 'Failed to send embed.');
       setStatus('Embed sent successfully.', 'success');
