@@ -3,21 +3,10 @@
 
   const ROOT_ID = 'view-donation-embed-editor';
   const PREVIEW_ID = 'dee-preview';
-  const STYLE_ID = 'gta-donation-preview-authoritative-styles';
-  const AUTHORITATIVE_ATTR = 'data-dh-authoritative';
-  const GUARD_KEY = '__gtaDonationPreviewInputGuard';
-
-  const INPUT_IDS = new Set([
-    'dee-title',
-    'dee-description',
-    'dee-color',
-    'dee-author',
-    'dee-footer',
-    'dee-image',
-    'dee-thumbnail',
-  ]);
-
+  const STYLE_ID = 'gta-donation-editor-enhancements';
+  let renderTimer = null;
   let bootTimer = null;
+  let boundRoot = null;
 
   const esc = (value) => String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -26,609 +15,267 @@
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
-  function getInput(id) {
-    const element = document.getElementById(id);
-    return element && 'value' in element ? element : null;
-  }
-
-  function inputText(id) {
-    const element = getInput(id);
-    return element ? String(element.value ?? '').trim() : '';
-  }
-
-  function safeUrl(value) {
-    const raw = String(value ?? '').trim();
-    if (!raw) return '';
-
+  const safeUrl = (value) => {
     try {
-      const url = new URL(raw);
+      const url = new URL(String(value || '').trim());
       return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
     } catch (_) {
       return '';
     }
-  }
+  };
 
-  function normalizeColor(value) {
+  const normalizeColor = (value) => {
     const raw = String(value ?? '').trim();
-
-    if (/^#[0-9a-f]{6}$/i.test(raw)) return raw;
-
-    if (/^\d+$/.test(raw)) {
-      const number = Number(raw);
-
-      if (
-        Number.isSafeInteger(number) &&
-        number >= 0 &&
-        number <= 0xFFFFFF
-      ) {
-        return `#${number.toString(16).padStart(6, '0')}`;
-      }
-    }
-
-    return '#5865F2';
-  }
+    return /^#[0-9a-f]{6}$/i.test(raw) ? raw.toUpperCase() : '#2563EB';
+  };
 
   function installStyles() {
     if (document.getElementById(STYLE_ID)) return;
-
     const style = document.createElement('style');
     style.id = STYLE_ID;
-
     style.textContent = `
-      #${PREVIEW_ID} .gta-authoritative-preview {
-        width: 100%;
-        min-height: 100%;
-        color: #dbdee1;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-
-      #${PREVIEW_ID} .gta-preview-message {
-        display: grid;
-        grid-template-columns: 40px minmax(0, 1fr);
-        gap: 12px;
-        align-items: start;
-      }
-
-      #${PREVIEW_ID} .gta-preview-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: #5865f2;
-        color: #fff;
-        font-size: 12px;
-        font-weight: 800;
-      }
-
-      #${PREVIEW_ID} .gta-preview-main {
-        min-width: 0;
-      }
-
-      #${PREVIEW_ID} .gta-preview-meta {
-        min-height: 24px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-      }
-
-      #${PREVIEW_ID} .gta-preview-username {
-        color: #f2f3f5;
-        font-size: 16px;
-        line-height: 20px;
-        font-weight: 600;
-      }
-
-      #${PREVIEW_ID} .gta-preview-bot {
-        color: #fff;
-        background: #5865f2;
-        border-radius: 3px;
-        padding: 0 4px;
-        font-size: 10px;
-        line-height: 16px;
-        font-weight: 700;
-      }
-
-      #${PREVIEW_ID} .gta-preview-time {
-        color: #949ba4;
-        font-size: 12px;
-        line-height: 16px;
-      }
-
-      #${PREVIEW_ID} .gta-preview-embed {
-        position: relative;
-        width: min(516px, 100%);
-        box-sizing: border-box;
-        padding: 10px 16px 12px 12px;
-        border-left: 4px solid var(--gta-preview-accent, #5865F2);
-        border-radius: 4px;
-        background: #2b2d31;
-        overflow: hidden;
-      }
-
-      #${PREVIEW_ID} .gta-preview-author {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin: 0 0 5px;
-        color: #b5bac1;
-        font-size: 12px;
-        line-height: 16px;
-        font-weight: 600;
-        word-break: break-word;
-      }
-
-      #${PREVIEW_ID} .gta-preview-title {
-        margin: 0 0 5px;
-        color: #f2f3f5;
-        font-size: 16px;
-        line-height: 21px;
-        font-weight: 600;
-        word-break: break-word;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description {
-        color: #dbdee1;
-        font-size: 14px;
-        line-height: 19px;
-        word-break: break-word;
-      }
-
-      /*
-       * Explicitly reset every heading margin. The browser's default
-       * h1/h2/h3 margins must never affect the embed's vertical rhythm.
-       */
-      #${PREVIEW_ID} .gta-preview-description h1,
-      #${PREVIEW_ID} .gta-preview-description h2,
-      #${PREVIEW_ID} .gta-preview-description h3 {
-        display: block;
-        margin: 0;
-        padding: 0;
-        color: #f2f3f5;
-        font-weight: 700;
-        word-break: break-word;
-        line-height: 1.25;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description h1 {
-        margin-top: 6px;
-        margin-bottom: 2px;
-        font-size: 20px;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description h2 {
-        margin-top: 6px;
-        margin-bottom: 2px;
-        font-size: 18px;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description h3 {
-        margin-top: 6px;
-        margin-bottom: 2px;
-        font-size: 16px;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description > h1:first-child,
-      #${PREVIEW_ID} .gta-preview-description > h2:first-child,
-      #${PREVIEW_ID} .gta-preview-description > h3:first-child {
-        margin-top: 0;
-      }
-
-      /*
-       * Each normal source line is its own block. This avoids inserting a
-       * <br> after a block-level heading, which previously caused the heading
-       * margin and line break to stack into a large blank gap.
-       */
-      #${PREVIEW_ID} .gta-preview-description .gta-preview-line {
-        display: block;
-        margin: 0;
-        padding: 0;
-        min-height: 19px;
-        line-height: 19px;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description .gta-preview-empty-line {
-        display: block;
-        height: 19px;
-        line-height: 19px;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description strong {
-        font-weight: 700;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description em {
-        font-style: italic;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description u {
-        text-decoration: underline;
-      }
-
-      #${PREVIEW_ID} .gta-preview-description s {
-        text-decoration: line-through;
-      }
-
-      #${PREVIEW_ID} .gta-preview-link {
-        color: #00a8fc;
-        text-decoration: none;
-      }
-
-      #${PREVIEW_ID} .gta-preview-code {
-        display: inline-block;
-        padding: 1px 4px;
-        border-radius: 3px;
-        background: #1e1f22;
-        border: 1px solid #3f4147;
-        font-family: Consolas, Monaco, monospace;
-        font-size: 12px;
-      }
-
-      #${PREVIEW_ID} .gta-preview-spoiler {
-        padding: 0 2px;
-        border-radius: 3px;
-        background: #202225;
-        color: transparent;
-        cursor: pointer;
-      }
-
-      #${PREVIEW_ID} .gta-preview-spoiler:hover {
-        color: #dbdee1;
-      }
-
-      #${PREVIEW_ID} .gta-preview-quote {
-        margin: 2px 0;
-        padding: 1px 0 1px 10px;
-        border-left: 4px solid #4f545c;
-        min-height: 19px;
-        box-sizing: border-box;
-      }
-
-      #${PREVIEW_ID} .gta-preview-thumb {
-        float: right;
-        width: 80px;
-        height: 80px;
-        margin: 0 0 8px 16px;
-        border-radius: 4px;
-        object-fit: cover;
-      }
-
-      #${PREVIEW_ID} .gta-preview-image {
-        display: block;
-        max-width: 100%;
-        max-height: 400px;
-        width: auto;
-        height: auto;
-        margin-top: 12px;
-        border-radius: 4px;
-        object-fit: contain;
-      }
-
-      #${PREVIEW_ID} .gta-preview-footer {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        clear: both;
-        margin-top: 9px;
-        color: #949ba4;
-        font-size: 11px;
-        line-height: 14px;
-        word-break: break-word;
-      }
+      #${ROOT_ID} .gta-dee-link{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+      #${ROOT_ID} .gta-dee-link .gta-dee-field{flex:1 1 auto;min-width:0}
+      #${ROOT_ID} .gta-dee-link .gta-dee-field>input{height:40px;padding-top:0;padding-bottom:0;box-sizing:border-box}
+      #${ROOT_ID} .gta-dee-link button{flex:0 0 auto;height:40px;min-width:110px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 14px}
+      #${ROOT_ID} .gta-dee-color-control{display:flex;align-items:center;gap:8px;width:100%}
+      #${ROOT_ID} .gta-dee-color-text{flex:1 1 auto;min-width:0;height:40px!important;box-sizing:border-box}
+      #${ROOT_ID} .gta-dee-color-picker{width:40px!important;height:40px!important;flex:0 0 40px;padding:3px!important;border-radius:7px!important;cursor:pointer;background:var(--bg-main)!important;box-sizing:border-box}
+      #${ROOT_ID} .gta-dee-color-picker::-webkit-color-swatch-wrapper{padding:0}
+      #${ROOT_ID} .gta-dee-color-picker::-webkit-color-swatch,#${ROOT_ID} .gta-dee-color-picker::-moz-color-swatch{border:0;border-radius:4px}
+      #${ROOT_ID} .gta-dee-color-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+      #${ROOT_ID} .gta-dee-color-swatch{width:28px;height:28px;flex:0 0 28px;padding:0;border:1px solid rgba(255,255,255,.18);border-radius:7px;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,.15);transition:transform .12s ease,box-shadow .12s ease}
+      #${ROOT_ID} .gta-dee-color-swatch:hover{transform:translateY(-1px);box-shadow:0 0 0 2px rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.18)}
+      #${ROOT_ID} .gta-dee-color-swatch.is-active{box-shadow:0 0 0 2px var(--bg-card),0 0 0 4px #5865F2}
+      #${ROOT_ID} .gta-dee-color-help{font-size:9px;color:var(--text-sec);line-height:1.35}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description{font-size:11px;line-height:1.55;color:#dbdee1;overflow-wrap:anywhere}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h1,#${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h2,#${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h3{margin:0 0 7px;font-weight:700;line-height:1.3}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h1{font-size:20px}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h2{font-size:17px}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h3{font-size:14px}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description p{margin:0}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description br{line-height:1.55}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description blockquote{margin:4px 0;padding-left:8px;border-left:3px solid #4e5058;color:#b5bac1}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description code{padding:1px 4px;border-radius:3px;background:#1e1f22;color:#f2f3f5}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description pre{margin:5px 0;padding:8px;border-radius:5px;background:#1e1f22;overflow:auto}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description a{color:#00a8fc;text-decoration:none}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-title{font-size:16px;font-weight:700;line-height:1.3;margin:0 0 6px;color:#fff}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-author{font-size:10px;font-weight:700;margin-bottom:7px;color:#fff}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-footer{display:block;margin-top:10px;color:#949ba4;font-size:10px}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-thumb{float:right;width:76px;height:76px;object-fit:cover;margin:0 0 7px 9px;border-radius:4px}
+      #${ROOT_ID} #${PREVIEW_ID} .gta-preview-image{max-width:100%;border-radius:4px;margin-top:9px;display:block}
     `;
-
     document.head.appendChild(style);
   }
 
-  function inlineMarkdown(value) {
-    let text = esc(value);
-    const protectedParts = [];
-
-    const protect = (html) => {
-      const token = `\u0001${protectedParts.length}\u0002`;
-      protectedParts.push(html);
-      return token;
-    };
-
-    text = text.replace(/```([\s\S]*?)```/g, (_, code) => protect(
-      `<pre style="margin:5px 0;padding:8px;border-radius:4px;background:#1e1f22;white-space:pre-wrap;font-family:Consolas,Monaco,monospace;font-size:12px;line-height:17px;overflow:auto"><code>${code.trim()}</code></pre>`
-    ));
-
-    text = text.replace(/`([^`\n]+)`/g, (_, code) => protect(
-      `<code class="gta-preview-code">${code}</code>`
-    ));
-
-    text = text.replace(
-      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-      (_, label, url) => protect(
-        `<a class="gta-preview-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
-      )
-    );
-
-    text = text.replace(
-      /\|\|([\s\S]*?)\|\|/g,
-      (_, content) => protect(
-        `<span class="gta-preview-spoiler">${content}</span>`
-      )
-    );
-
-    text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/__([^_\n]+)__/g, '<u>$1</u>');
-    text = text.replace(/~~([^~\n]+)~~/g, '<s>$1</s>');
-    text = text.replace(
-      /(^|[^*])\*([^*\n]+)\*(?!\*)/g,
-      '$1<em>$2</em>'
-    );
-
-    return text.replace(
-      /\u0001(\d+)\u0002/g,
-      (_, index) => protectedParts[Number(index)] || ''
-    );
+  function value(id, fallback = '') {
+    return document.getElementById(id)?.value ?? fallback;
   }
 
-  function renderDescription(value) {
-    const source = String(value ?? '').replace(/\r\n?/g, '\n');
+  function inlineMarkdown(text) {
+    let out = esc(text);
+    out = out.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    out = out.replace(/\|\|([^|\n]+)\|\|/g, '<span style="background:#202225;color:transparent;border-radius:3px">$1</span>');
+    out = out.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+    out = out.replace(/__([^_\n]+)__/g, '<u>$1</u>');
+    out = out.replace(/~~([^~\n]+)~~/g, '<s>$1</s>');
+    out = out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+    out = out.replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>');
+    return out;
+  }
 
-    if (!source.trim()) return '';
+  function renderDescription(raw) {
+    const lines = String(raw ?? '').replace(/\r\n?/g, '\n').split('\n');
+    let html = '';
+    let inCode = false;
+    let codeLines = [];
+    const flushCode = () => {
+      if (!inCode) return;
+      html += `<pre><code>${esc(codeLines.join('\n'))}</code></pre>`;
+      codeLines = [];
+      inCode = false;
+    };
 
-    const lines = source.split('\n');
-
-    return lines.map((line) => {
-      /*
-       * Heading parsing happens before inline Markdown so the leading #
-       * characters are removed from the final DOM.
-       */
+    lines.forEach((line) => {
+      if (/^\s*```/.test(line)) {
+        if (inCode) flushCode(); else inCode = true;
+        return;
+      }
+      if (inCode) {
+        codeLines.push(line);
+        return;
+      }
+      if (!line.trim()) {
+        html += '<br>';
+        return;
+      }
       const heading = line.match(/^\s*(#{1,3})\s+(.+?)\s*$/);
-
       if (heading) {
         const level = heading[1].length;
-        const headingText = inlineMarkdown(heading[2]);
-
-        return `<h${level}>${headingText}</h${level}>`;
+        html += `<h${level}>${inlineMarkdown(heading[2])}</h${level}>`;
+        return;
       }
-
-      const quote = line.match(/^\s*>\s?(.*)$/);
-
-      if (quote) {
-        return `
-          <div class="gta-preview-quote">
-            ${inlineMarkdown(quote[1])}
-          </div>
-        `;
+      if (/^\s*>\s?/.test(line)) {
+        html += `<blockquote>${inlineMarkdown(line.replace(/^\s*>\s?/, ''))}</blockquote>`;
+        return;
       }
+      html += `${inlineMarkdown(line)}<br>`;
+    });
 
-      if (!line) {
-        return '<span class="gta-preview-empty-line" aria-hidden="true"></span>';
-      }
-
-      return `<span class="gta-preview-line">${inlineMarkdown(line)}</span>`;
-    }).join('');
+    flushCode();
+    return html.replace(/(<br>)+$/, '');
   }
 
   function getData() {
     return {
-      title: inputText('dee-title'),
-      description: String(
-        getInput('dee-description')?.value ?? ''
-      ),
-      author: inputText('dee-author'),
-      footer: inputText('dee-footer'),
-      image: safeUrl(inputText('dee-image')),
-      thumbnail: safeUrl(inputText('dee-thumbnail')),
-      color: normalizeColor(inputText('dee-color')),
+      title: value('dee-title'),
+      description: value('dee-description'),
+      color: normalizeColor(value('dee-color', '#2563EB')),
+      author: value('dee-author'),
+      footer: value('dee-footer'),
+      image: value('dee-image'),
+      thumbnail: value('dee-thumbnail'),
     };
   }
 
   function renderPreview() {
-    installStyles();
-
     const box = document.getElementById(PREVIEW_ID);
-
-    if (!box) return false;
-
+    if (!box) return;
     const data = getData();
-    const description = renderDescription(data.description);
-
-    const authorHtml = data.author
-      ? `<div class="gta-preview-author">${esc(data.author)}</div>`
-      : '';
-
-    const titleHtml = data.title
-      ? `<div class="gta-preview-title">${esc(data.title)}</div>`
-      : '';
-
-    const thumbnailHtml = data.thumbnail
-      ? `
-        <img
-          class="gta-preview-thumb"
-          src="${esc(data.thumbnail)}"
-          alt=""
-        >
-      `
-      : '';
-
-    const descriptionHtml = description
-      ? `
-        <div class="gta-preview-description">
-          ${description}
-        </div>
-      `
-      : '';
-
-    const imageHtml = data.image
-      ? `
-        <img
-          class="gta-preview-image"
-          src="${esc(data.image)}"
-          alt=""
-        >
-      `
-      : '';
-
-    const footerHtml = data.footer
-      ? `
-        <div class="gta-preview-footer">
-          ${esc(data.footer)}
-        </div>
-      `
-      : '';
-
+    const image = safeUrl(data.image);
+    const thumb = safeUrl(data.thumbnail);
+    box.setAttribute('data-dh-authoritative', '1');
     box.innerHTML = `
-      <div
-        class="gta-authoritative-preview"
-        ${AUTHORITATIVE_ATTR}="1"
-      >
-        <div class="gta-preview-message">
-
-          <div class="gta-preview-avatar">
-            GP
-          </div>
-
-          <div class="gta-preview-main">
-
-            <div class="gta-preview-meta">
-              <span class="gta-preview-username">
-                GTA Pinas Treasury
-              </span>
-
-              <span class="gta-preview-bot">
-                BOT
-              </span>
-
-              <span class="gta-preview-time">
-                Today at ${
-                  esc(
-                    new Date().toLocaleTimeString(
-                      [],
-                      {
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      }
-                    )
-                  )
-                }
-              </span>
-            </div>
-
-            <div
-              class="gta-preview-embed"
-              style="--gta-preview-accent:${esc(data.color)}"
-            >
-              ${authorHtml}
-              ${titleHtml}
-              ${thumbnailHtml}
-              ${descriptionHtml}
-              ${imageHtml}
-              ${footerHtml}
-            </div>
-
-          </div>
-        </div>
-      </div>
-    `;
-
-    return true;
+      <div class="gta-user"><div class="gta-avatar">GP</div><div><strong>GTA Pinas Treasury</strong><span>Today</span></div></div>
+      <div class="gta-embed" style="border-left-color:${esc(data.color)}">
+        ${thumb ? `<img class="gta-preview-thumb" src="${esc(thumb)}" alt="">` : ''}
+        ${data.author ? `<div class="gta-preview-author">${esc(data.author)}</div>` : ''}
+        ${data.title ? `<div class="gta-preview-title">${esc(data.title)}</div>` : ''}
+        <div class="gta-preview-description">${renderDescription(data.description) || '<span style="color:#949ba4">Start typing to preview the embed.</span>'}</div>
+        ${image ? `<img class="gta-preview-image" src="${esc(image)}" alt="">` : ''}
+        ${data.footer ? `<small class="gta-preview-footer">${esc(data.footer)}</small>` : ''}
+      </div>`;
   }
 
-  function installInputGuard() {
-    if (window[GUARD_KEY]) return;
-
-    window[GUARD_KEY] = true;
-
-    /*
-     * Capture at document level so the legacy renderer never receives
-     * the input event. This keeps exactly one renderer active per keypress.
-     */
-    document.addEventListener(
-      'input',
-      (event) => {
-        const target = event.target;
-
-        if (
-          !target?.id ||
-          !INPUT_IDS.has(target.id)
-        ) {
-          return;
-        }
-
-        renderPreview();
-        event.stopImmediatePropagation();
-      },
-      true
-    );
-
-    document.addEventListener(
-      'change',
-      (event) => {
-        const target = event.target;
-
-        if (
-          !target?.id ||
-          !INPUT_IDS.has(target.id)
-        ) {
-          return;
-        }
-
-        renderPreview();
-        event.stopImmediatePropagation();
-      },
-      true
-    );
+  function scheduleRender(delay = 100) {
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(renderPreview, delay);
   }
 
-  function installButtonHandlers() {
-    const root = document.getElementById(ROOT_ID);
+  function updateSwatches(color) {
+    const normalized = normalizeColor(color);
+    document.querySelectorAll(`#${ROOT_ID} .gta-dee-color-swatch`).forEach((swatch) => {
+      swatch.classList.toggle('is-active', normalizeColor(swatch.dataset.color) === normalized);
+    });
+  }
 
-    if (
-      !root ||
-      root.dataset.gtaAuthoritativeButtonsBound === '1'
-    ) {
-      return;
-    }
+  function syncColorControls(color, render = true) {
+    const normalized = normalizeColor(color);
+    const text = document.getElementById('dee-color');
+    const picker = document.getElementById('dee-color-picker');
+    if (text && text.value !== normalized) text.value = normalized;
+    if (picker && picker.value !== normalized) picker.value = normalized;
+    updateSwatches(normalized);
+    if (render) scheduleRender(50);
+  }
 
-    root.dataset.gtaAuthoritativeButtonsBound = '1';
+  function enhanceColorControl(root) {
+    const field = root.querySelector('#dee-color')?.closest('.gta-dee-field');
+    const text = root.querySelector('#dee-color');
+    if (!field || !text || root.querySelector('#dee-color-picker')) return;
 
-    root.addEventListener(
-      'click',
-      (event) => {
-        const button = event.target?.closest?.(
-          '#dee-load-button, #dee-reset, #dee-preview-button'
-        );
+    text.classList.add('gta-dee-color-text');
+    const control = document.createElement('div');
+    control.className = 'gta-dee-color-control';
+    text.parentNode.insertBefore(control, text);
+    control.appendChild(text);
 
-        if (!button) return;
+    const picker = document.createElement('input');
+    picker.type = 'color';
+    picker.id = 'dee-color-picker';
+    picker.className = 'gta-dee-color-picker';
+    picker.value = normalizeColor(text.value);
+    control.appendChild(picker);
 
-        window.setTimeout(renderPreview, 0);
-      },
-      true
-    );
+    const presets = [
+      ['#5865F2', 'Discord Blue'], ['#57F287', 'Green'], ['#FEE75C', 'Yellow'],
+      ['#EB459E', 'Fuchsia'], ['#ED4245', 'Red'], ['#2C2F33', 'Dark Gray'],
+    ];
+    const presetWrap = document.createElement('div');
+    presetWrap.id = 'dee-color-presets';
+    presetWrap.className = 'gta-dee-color-presets';
+    presets.forEach(([color, label]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'gta-dee-color-swatch';
+      button.dataset.color = color;
+      button.title = `${label} ${color}`;
+      button.setAttribute('aria-label', `${label} ${color}`);
+      button.style.background = color;
+      presetWrap.appendChild(button);
+    });
+    field.appendChild(presetWrap);
+
+    const help = document.createElement('div');
+    help.className = 'gta-dee-color-help';
+    help.textContent = 'Pick a color or enter a 6-digit hex value.';
+    field.appendChild(help);
+
+    text.addEventListener('input', () => {
+      const raw = String(text.value || '').trim();
+      if (/^#[0-9a-f]{6}$/i.test(raw)) syncColorControls(raw);
+      else updateSwatches(raw);
+    });
+    text.addEventListener('blur', () => syncColorControls(text.value));
+    picker.addEventListener('input', () => syncColorControls(picker.value));
+    picker.addEventListener('change', () => syncColorControls(picker.value));
+    presetWrap.addEventListener('click', (event) => {
+      const button = event.target.closest('.gta-dee-color-swatch');
+      if (!button) return;
+      syncColorControls(button.dataset.color);
+      document.getElementById('dee-color')?.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    syncColorControls(text.value, false);
+  }
+
+  function bindRoot(root) {
+    if (boundRoot === root) return;
+    boundRoot = root;
+    enhanceColorControl(root);
+
+    root.addEventListener('input', (event) => {
+      if (event.target.matches('#dee-title,#dee-description,#dee-author,#dee-footer,#dee-image,#dee-thumbnail')) {
+        scheduleRender();
+      }
+    });
+    root.addEventListener('change', (event) => {
+      if (event.target.matches('#dee-title,#dee-description,#dee-color,#dee-author,#dee-footer,#dee-image,#dee-thumbnail')) {
+        scheduleRender();
+      }
+    });
+    root.addEventListener('click', (event) => {
+      if (event.target.closest('#dee-load-button,#dee-reset,#dee-preview-button')) scheduleRender(250);
+    });
+    scheduleRender(120);
   }
 
   function boot() {
-    window.clearTimeout(bootTimer);
-
-    installInputGuard();
-
+    installStyles();
     const root = document.getElementById(ROOT_ID);
-
-    if (!root) {
-      bootTimer = window.setTimeout(boot, 100);
+    if (root) {
+      bindRoot(root);
       return;
     }
-
-    installStyles();
-    installButtonHandlers();
-    renderPreview();
+    clearTimeout(bootTimer);
+    bootTimer = setTimeout(boot, 100);
   }
 
   window.__gtaRenderDonationEmbedPreview = renderPreview;
 
   if (document.readyState === 'loading') {
-    document.addEventListener(
-      'DOMContentLoaded',
-      boot,
-      { once: true }
-    );
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
   } else {
     boot();
   }
