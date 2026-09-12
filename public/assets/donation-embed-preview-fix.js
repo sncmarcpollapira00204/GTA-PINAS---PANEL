@@ -26,7 +26,14 @@
 
   const normalizeColor = (value) => {
     const raw = String(value ?? '').trim();
-    return /^#[0-9a-f]{6}$/i.test(raw) ? raw.toUpperCase() : '#2563EB';
+    if (/^#[0-9a-f]{6}$/i.test(raw)) return raw.toUpperCase();
+    if (/^\d+$/.test(raw)) {
+      const number = Number(raw);
+      if (Number.isSafeInteger(number) && number >= 0 && number <= 0xFFFFFF) {
+        return `#${number.toString(16).padStart(6, '0').toUpperCase()}`;
+      }
+    }
+    return '#2563EB';
   };
 
   function installStyles() {
@@ -34,7 +41,7 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      #${ROOT_ID} .gta-dee-link{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+      #${ROOT_ID} .gta-dee-link{display:flex;align-items:flex-end;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
       #${ROOT_ID} .gta-dee-link .gta-dee-field{flex:1 1 auto;min-width:0}
       #${ROOT_ID} .gta-dee-link .gta-dee-field>input{height:40px;padding-top:0;padding-bottom:0;box-sizing:border-box}
       #${ROOT_ID} .gta-dee-link button{flex:0 0 auto;height:40px;min-width:110px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 14px}
@@ -43,11 +50,6 @@
       #${ROOT_ID} .gta-dee-color-picker{width:40px!important;height:40px!important;flex:0 0 40px;padding:3px!important;border-radius:7px!important;cursor:pointer;background:var(--bg-main)!important;box-sizing:border-box}
       #${ROOT_ID} .gta-dee-color-picker::-webkit-color-swatch-wrapper{padding:0}
       #${ROOT_ID} .gta-dee-color-picker::-webkit-color-swatch,#${ROOT_ID} .gta-dee-color-picker::-moz-color-swatch{border:0;border-radius:4px}
-      #${ROOT_ID} .gta-dee-color-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
-      #${ROOT_ID} .gta-dee-color-swatch{width:28px;height:28px;flex:0 0 28px;padding:0;border:1px solid rgba(255,255,255,.18);border-radius:7px;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,.15);transition:transform .12s ease,box-shadow .12s ease}
-      #${ROOT_ID} .gta-dee-color-swatch:hover{transform:translateY(-1px);box-shadow:0 0 0 2px rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.18)}
-      #${ROOT_ID} .gta-dee-color-swatch.is-active{box-shadow:0 0 0 2px var(--bg-card),0 0 0 4px #5865F2}
-      #${ROOT_ID} .gta-dee-color-help{font-size:9px;color:var(--text-sec);line-height:1.35}
       #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description{font-size:11px;line-height:1.55;color:#dbdee1;overflow-wrap:anywhere}
       #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h1,#${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h2,#${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h3{margin:0 0 7px;font-weight:700;line-height:1.3}
       #${ROOT_ID} #${PREVIEW_ID} .gta-preview-description h1{font-size:20px}
@@ -129,11 +131,11 @@
 
   function getData() {
     return {
-      title: value('dee-title'),
+      title: value('dee-title', 'Donation Price List') || 'Donation Price List',
       description: value('dee-description'),
       color: normalizeColor(value('dee-color', '#2563EB')),
-      author: value('dee-author'),
-      footer: value('dee-footer'),
+      author: value('dee-author', 'GTA Pinas Treasury') || 'GTA Pinas Treasury',
+      footer: value('dee-footer', 'GTA Pinas Treasury') || 'GTA Pinas Treasury',
       image: value('dee-image'),
       thumbnail: value('dee-thumbnail'),
     };
@@ -163,20 +165,12 @@
     renderTimer = setTimeout(renderPreview, delay);
   }
 
-  function updateSwatches(color) {
-    const normalized = normalizeColor(color);
-    document.querySelectorAll(`#${ROOT_ID} .gta-dee-color-swatch`).forEach((swatch) => {
-      swatch.classList.toggle('is-active', normalizeColor(swatch.dataset.color) === normalized);
-    });
-  }
-
   function syncColorControls(color, render = true) {
     const normalized = normalizeColor(color);
     const text = document.getElementById('dee-color');
     const picker = document.getElementById('dee-color-picker');
     if (text && text.value !== normalized) text.value = normalized;
     if (picker && picker.value !== normalized) picker.value = normalized;
-    updateSwatches(normalized);
     if (render) scheduleRender(50);
   }
 
@@ -198,44 +192,14 @@
     picker.value = normalizeColor(text.value);
     control.appendChild(picker);
 
-    const presets = [
-      ['#5865F2', 'Discord Blue'], ['#57F287', 'Green'], ['#FEE75C', 'Yellow'],
-      ['#EB459E', 'Fuchsia'], ['#ED4245', 'Red'], ['#2C2F33', 'Dark Gray'],
-    ];
-    const presetWrap = document.createElement('div');
-    presetWrap.id = 'dee-color-presets';
-    presetWrap.className = 'gta-dee-color-presets';
-    presets.forEach(([color, label]) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'gta-dee-color-swatch';
-      button.dataset.color = color;
-      button.title = `${label} ${color}`;
-      button.setAttribute('aria-label', `${label} ${color}`);
-      button.style.background = color;
-      presetWrap.appendChild(button);
-    });
-    field.appendChild(presetWrap);
-
-    const help = document.createElement('div');
-    help.className = 'gta-dee-color-help';
-    help.textContent = 'Pick a color or enter a 6-digit hex value.';
-    field.appendChild(help);
-
     text.addEventListener('input', () => {
       const raw = String(text.value || '').trim();
-      if (/^#[0-9a-f]{6}$/i.test(raw)) syncColorControls(raw);
-      else updateSwatches(raw);
+      if (/^#[0-9a-f]{6}$/i.test(raw) || /^\d+$/.test(raw)) syncColorControls(raw);
+      else scheduleRender(50);
     });
     text.addEventListener('blur', () => syncColorControls(text.value));
     picker.addEventListener('input', () => syncColorControls(picker.value));
     picker.addEventListener('change', () => syncColorControls(picker.value));
-    presetWrap.addEventListener('click', (event) => {
-      const button = event.target.closest('.gta-dee-color-swatch');
-      if (!button) return;
-      syncColorControls(button.dataset.color);
-      document.getElementById('dee-color')?.dispatchEvent(new Event('input', { bubbles: true }));
-    });
 
     syncColorControls(text.value, false);
   }
