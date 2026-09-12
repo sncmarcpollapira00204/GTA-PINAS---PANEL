@@ -43,26 +43,18 @@ textarea {
 }
 
 @media (hover: none), (pointer: coarse) {
-    .card:hover {
-        transform: none !important;
-        box-shadow: none !important;
-    }
-
+    .card:hover { transform: none !important; box-shadow: none !important; }
     .btn,
     .btn-icon,
     .nav-item,
     .nav-dropdown-toggle,
     .settings-tab-btn,
     .account-switcher,
-    .account-menu-item {
-        touch-action: manipulation;
-    }
+    .account-menu-item { touch-action: manipulation; }
 }
 
 @media (max-width: 900px) {
-    :root {
-        --mobile-topbar-height: 60px;
-    }
+    :root { --mobile-topbar-height: 60px; }
 
     html,
     body {
@@ -72,14 +64,9 @@ textarea {
         overflow: hidden !important;
     }
 
-    body.mobile-sidebar-open {
-        overscroll-behavior: none;
-    }
-
+    body.mobile-sidebar-open { overscroll-behavior: none; }
     .ambient-layer,
-    .watermark {
-        pointer-events: none;
-    }
+    .watermark { pointer-events: none; }
 
     .main-wrapper {
         width: 100% !important;
@@ -87,6 +74,7 @@ textarea {
         height: 100vh;
         height: 100dvh;
         overflow: hidden;
+        flex: 1 1 auto !important;
     }
 
     .top-nav {
@@ -133,9 +121,7 @@ textarea {
         white-space: nowrap;
     }
 
-    .user-profile {
-        flex: 0 0 auto;
-    }
+    .user-profile { flex: 0 0 auto; }
 
     .content-area {
         width: 100% !important;
@@ -165,11 +151,12 @@ textarea {
         -webkit-backdrop-filter: blur(4px);
     }
 
+    /* Mobile navigation: use a real drawer instead of consuming half the viewport. */
     .sidebar {
         position: fixed !important;
         inset: 0 auto 0 0 !important;
-        width: min(310px, 88vw) !important;
-        max-width: 88vw !important;
+        width: min(380px, calc(100vw - 18px)) !important;
+        max-width: calc(100vw - 18px) !important;
         height: 100vh !important;
         height: 100dvh !important;
         z-index: 100 !important;
@@ -180,6 +167,7 @@ textarea {
         overflow: hidden;
         box-shadow: 24px 0 50px rgba(0, 0, 0, .42);
         will-change: transform;
+        flex: 0 0 auto !important;
     }
 
     body.mobile-sidebar-open .sidebar {
@@ -211,22 +199,15 @@ textarea {
         font-size: 13px !important;
     }
 
-    .nav-dropdown-menu-inner {
-        padding-bottom: 4px;
-    }
-
-    .nav-subsection-label {
-        margin: 10px 12px 4px !important;
-    }
+    .nav-dropdown-menu-inner { padding-bottom: 4px; }
+    .nav-subsection-label { margin: 10px 12px 4px !important; }
 
     .sidebar-bottom {
         flex: 0 0 auto;
         padding: 10px 12px max(12px, env(safe-area-inset-bottom)) !important;
     }
 
-    .account-switcher {
-        min-height: 56px !important;
-    }
+    .account-switcher { min-height: 56px !important; }
 
     .account-menu {
         left: 12px !important;
@@ -245,30 +226,17 @@ textarea {
         flex-direction: column !important;
     }
 
-    .page-header > div:first-child {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .page-header h1 {
-        overflow-wrap: anywhere;
-    }
-
-    .page-header p {
-        max-width: 100%;
-    }
+    .page-header > div:first-child { width: 100%; min-width: 0; }
+    .page-header h1 { overflow-wrap: anywhere; }
+    .page-header p { max-width: 100%; }
 
     .page-header > .btn,
     .page-header > a.btn,
-    .page-header > div:last-child:not(:first-child) {
-        max-width: 100%;
-    }
+    .page-header > div:last-child:not(:first-child) { max-width: 100%; }
 
     .card,
     .settings-card,
-    .table-container {
-        max-width: 100%;
-    }
+    .table-container { max-width: 100%; }
 
     .table-controls,
     .staff-toolbar,
@@ -276,9 +244,7 @@ textarea {
     .whitelist-list-toolbar,
     .access-filter-bar,
     .performance-list-heading,
-    .transcript-meta-actions {
-        min-width: 0;
-    }
+    .transcript-meta-actions { min-width: 0; }
 
     .table-controls {
         align-items: stretch !important;
@@ -287,10 +253,7 @@ textarea {
         padding: 14px !important;
     }
 
-    .table-controls > * {
-        width: 100%;
-        max-width: 100%;
-    }
+    .table-controls > * { width: 100%; max-width: 100%; }
 
     .stats-grid,
     .dashboard-stats-grid {
@@ -299,14 +262,8 @@ textarea {
         margin-bottom: 14px !important;
     }
 
-    .stat-card {
-        min-width: 0;
-        padding: 16px !important;
-    }
-
-    .stat-card .value {
-        font-size: clamp(24px, 8vw, 30px) !important;
-    }
+    .stat-card { min-width: 0; padding: 16px !important; }
+    .stat-card .value { font-size: clamp(24px, 8vw, 30px) !important; }
 
     .command-grid,
     .settings-shell,
@@ -317,9 +274,7 @@ textarea {
     .staff-stat-grid,
     .performance-summary-grid,
     .whitelist-detail-grid,
-    .access-summary-grid {
-        min-width: 0;
-    }
+    .access-summary-grid { min-width: 0; }
 
     #view-settings .settings-shell {
         grid-template-columns: 1fr !important;
@@ -342,14 +297,9 @@ textarea {
         scrollbar-width: none;
     }
 
-    .settings-section-nav::-webkit-scrollbar {
-        display: none;
-    }
-
+    .settings-section-nav::-webkit-scrollbar { display: none; }
     .settings-section-nav-header,
-    .settings-nav-note {
-        display: none !important;
-    }
+    .settings-nav-note { display: none !important; }
 
     .settings-tab-btn {
         flex: 0 0 auto;
@@ -359,13 +309,8 @@ textarea {
         white-space: nowrap;
     }
 
-    .settings-stage {
-        min-width: 0;
-    }
-
-    .settings-card-heading {
-        align-items: flex-start !important;
-    }
+    .settings-stage { min-width: 0; }
+    .settings-card-heading { align-items: flex-start !important; }
 
     .transcript-workspace {
         width: 100% !important;
@@ -410,9 +355,7 @@ textarea {
         flex: 0 0 auto;
     }
 
-    .message-content {
-        min-width: 0;
-    }
+    .message-content { min-width: 0; }
 
     .message-header {
         align-items: flex-start;
@@ -435,9 +378,7 @@ textarea {
         border-left: 0 !important;
     }
 
-    .side-panel.open {
-        transform: translateX(-100vw) !important;
-    }
+    .side-panel.open { transform: translateX(-100vw) !important; }
 
     .panel-header {
         padding: max(14px, env(safe-area-inset-top)) 16px 14px !important;
@@ -454,10 +395,7 @@ textarea {
         flex-wrap: wrap;
     }
 
-    .panel-footer .btn {
-        flex: 1 1 160px;
-        min-height: 44px;
-    }
+    .panel-footer .btn { flex: 1 1 160px; min-height: 44px; }
 
     .whitelist-profile-dialog-layer {
         align-items: flex-end !important;
@@ -472,21 +410,14 @@ textarea {
         padding-bottom: env(safe-area-inset-bottom);
     }
 
-    .whitelist-profile-dialog-content {
-        -webkit-overflow-scrolling: touch;
-    }
-
+    .whitelist-profile-dialog-content { -webkit-overflow-scrolling: touch; }
     .access-table-card,
-    .whitelist-list-card {
-        overflow: hidden !important;
-    }
+    .whitelist-list-card { overflow: hidden !important; }
 
     .access-table-scroll,
     .whitelist-table-scroll,
     .performance-table-scroll,
-    .table-container {
-        position: relative;
-    }
+    .table-container { position: relative; }
 
     .access-table-scroll::after,
     .whitelist-table-scroll::after,
@@ -511,62 +442,25 @@ textarea {
 }
 
 @media (max-width: 650px) {
-    .content-area {
-        padding: 14px 12px calc(24px + env(safe-area-inset-bottom)) !important;
-    }
-
+    .content-area { padding: 14px 12px calc(24px + env(safe-area-inset-bottom)) !important; }
     .top-nav {
         padding-left: max(8px, env(safe-area-inset-left)) !important;
         padding-right: max(8px, env(safe-area-inset-right)) !important;
     }
-
-    .staff-spotlight {
-        height: 34px !important;
-        padding: 0 9px !important;
-    }
-
+    .staff-spotlight { height: 34px !important; padding: 0 9px !important; }
     .staff-spotlight-label,
-    .live-status-pill {
-        display: none !important;
-    }
-
-    .page-header h1 {
-        font-size: clamp(22px, 7vw, 26px) !important;
-    }
-
-    .page-header p {
-        font-size: 11px !important;
-        line-height: 1.55;
-    }
-
+    .live-status-pill { display: none !important; }
+    .page-header h1 { font-size: clamp(22px, 7vw, 26px) !important; }
+    .page-header p { font-size: 11px !important; line-height: 1.55; }
     .page-header > .btn,
-    .page-header > a.btn {
-        width: 100%;
-        min-height: 44px;
-    }
-
+    .page-header > a.btn { width: 100%; min-height: 44px; }
     .card,
-    .settings-card {
-        padding: 15px !important;
-        border-radius: 12px !important;
-    }
-
+    .settings-card { padding: 15px !important; border-radius: 12px !important; }
     .access-table-card,
     .whitelist-list-card,
-    .table-container {
-        padding: 0 !important;
-    }
-
-    .btn {
-        min-height: 44px;
-        padding: 10px 14px;
-    }
-
-    .btn-icon {
-        min-width: 42px;
-        min-height: 42px;
-    }
-
+    .table-container { padding: 0 !important; }
+    .btn { min-height: 44px; padding: 10px 14px; }
+    .btn-icon { min-width: 42px; min-height: 42px; }
     input:not([type="checkbox"]):not([type="radio"]),
     select,
     textarea,
@@ -576,23 +470,15 @@ textarea {
         min-height: 44px !important;
         font-size: 16px !important;
     }
-
     .whitelist-lookup-bar {
         align-items: stretch !important;
         flex-direction: column !important;
         padding: 14px !important;
     }
-
-    .whitelist-lookup-bar .btn {
-        width: 100%;
-    }
-
+    .whitelist-lookup-bar .btn { width: 100%; }
     .whitelist-list-toolbar,
     .staff-toolbar,
-    .access-filter-bar {
-        padding: 14px !important;
-    }
-
+    .access-filter-bar { padding: 14px !important; }
     .staff-search-wrap,
     .whitelist-list-search-group,
     .whitelist-search-field,
@@ -601,7 +487,6 @@ textarea {
         width: 100% !important;
         max-width: 100% !important;
     }
-
     .settings-control-grid,
     .theme-option-grid,
     .theme-option-grid-two,
@@ -611,33 +496,14 @@ textarea {
     #view-backup .recovery-grid,
     .staff-profile-grid,
     .performance-summary-grid,
-    .access-summary-grid {
-        grid-template-columns: 1fr !important;
-    }
-
+    .access-summary-grid { grid-template-columns: 1fr !important; }
     .recovery-card,
-    #view-backup .recovery-card {
-        min-height: 0 !important;
-    }
-
+    #view-backup .recovery-card { min-height: 0 !important; }
     .recovery-card .btn,
-    .recovery-file-input {
-        width: 100% !important;
-    }
-
-    .access-summary-card {
-        min-height: 88px !important;
-        padding: 14px !important;
-    }
-
-    .access-card-heading {
-        padding: 14px !important;
-    }
-
-    .access-card-heading > span {
-        white-space: normal !important;
-    }
-
+    .recovery-file-input { width: 100% !important; }
+    .access-summary-card { min-height: 88px !important; padding: 14px !important; }
+    .access-card-heading { padding: 14px !important; }
+    .access-card-heading > span { white-space: normal !important; }
     .staff-directory-summary,
     .performance-list-heading,
     .whitelist-profile-head,
@@ -645,85 +511,31 @@ textarea {
         align-items: flex-start !important;
         flex-direction: column !important;
     }
-
-    .staff-stat-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .whitelist-applicant-profile {
-        width: 100%;
-        max-width: 100% !important;
-    }
-
-    .whitelist-profile-summary {
-        padding-left: 0 !important;
-    }
-
-    .whitelist-profile-actions {
-        width: 100%;
-        flex-direction: column !important;
-    }
-
-    .whitelist-profile-actions .btn {
-        width: 100%;
-    }
-
-    .transcript-viewer {
-        min-height: 470px !important;
-    }
-
+    .staff-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .whitelist-applicant-profile { width: 100%; max-width: 100% !important; }
+    .whitelist-profile-summary { padding-left: 0 !important; }
+    .whitelist-profile-actions { width: 100%; flex-direction: column !important; }
+    .whitelist-profile-actions .btn { width: 100%; }
+    .transcript-viewer { min-height: 470px !important; }
     .transcript-meta-actions .btn,
-    .transcript-meta-actions a.btn {
-        width: 100%;
-    }
-
-    .claim-card {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 12px;
-    }
+    .transcript-meta-actions a.btn { width: 100%; }
+    .claim-card { align-items: flex-start; flex-direction: column; gap: 12px; }
 }
 
 @media (max-width: 440px) {
     .stats-grid,
     .dashboard-stats-grid,
-    .staff-stat-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .content-area {
-        padding-left: 10px !important;
-        padding-right: 10px !important;
-    }
-
+    .staff-stat-grid { grid-template-columns: 1fr !important; }
+    .content-area { padding-left: 10px !important; padding-right: 10px !important; }
     .sidebar {
-        width: min(300px, 92vw) !important;
-        max-width: 92vw !important;
+        width: min(380px, calc(100vw - 14px)) !important;
+        max-width: calc(100vw - 14px) !important;
     }
-
-    .staff-spotlight {
-        max-width: calc(100vw - 74px) !important;
-    }
-
-    .settings-card-heading {
-        gap: 9px !important;
-    }
-
-    .settings-icon {
-        width: 32px !important;
-        height: 32px !important;
-        flex: 0 0 auto;
-    }
-
-    .message-row {
-        padding-left: 9px !important;
-        padding-right: 9px !important;
-    }
-
-    .message-avatar {
-        width: 30px !important;
-        height: 30px !important;
-    }
+    .staff-spotlight { max-width: calc(100vw - 74px) !important; }
+    .settings-card-heading { gap: 9px !important; }
+    .settings-icon { width: 32px !important; height: 32px !important; flex: 0 0 auto; }
+    .message-row { padding-left: 9px !important; padding-right: 9px !important; }
+    .message-avatar { width: 30px !important; height: 30px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -735,16 +547,10 @@ textarea {
     }
 }
 
-/* Mobile stability fix v1.6 */
 #mobile-sidebar-overlay,
-#side-panel-overlay {
-    pointer-events: none;
-}
-
+#side-panel-overlay { pointer-events: none; }
 body.mobile-sidebar-open #mobile-sidebar-overlay,
-#side-panel-overlay.active {
-    pointer-events: auto;
-}
+#side-panel-overlay.active { pointer-events: auto; }
 
 @media (max-width: 900px) {
     #mobile-sidebar-overlay {
@@ -756,53 +562,29 @@ body.mobile-sidebar-open #mobile-sidebar-overlay,
         -webkit-backdrop-filter: none !important;
         transition: opacity .18s ease, visibility 0s linear .18s !important;
     }
-
     body.mobile-sidebar-open #mobile-sidebar-overlay {
         visibility: visible;
         opacity: 1;
         pointer-events: auto;
         transition-delay: 0s !important;
     }
-
-    .sidebar {
-        will-change: auto !important;
-        backface-visibility: hidden;
-    }
-
-    body.mobile-sidebar-open .sidebar {
-        will-change: transform !important;
-    }
-
-    #side-panel-overlay {
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-    }
-
-    .view-section {
-        animation-duration: .12s !important;
-    }
+    .sidebar { will-change: auto !important; backface-visibility: hidden; }
+    body.mobile-sidebar-open .sidebar { will-change: transform !important; }
+    #side-panel-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    .view-section { animation-duration: .12s !important; }
 }
 
-
-/* Emergency interaction and low-power fix v1.7 */
 #mobile-sidebar-overlay,
 #side-panel-overlay,
-.whitelist-profile-dialog-layer[hidden] {
-    pointer-events: none !important;
-}
-
+.whitelist-profile-dialog-layer[hidden] { pointer-events: none !important; }
 body:not(.mobile-sidebar-open) #mobile-sidebar-overlay {
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
-
 body.mobile-sidebar-open #mobile-sidebar-overlay,
 #side-panel-overlay.active,
-.whitelist-profile-dialog-layer:not([hidden]) {
-    pointer-events: auto !important;
-}
-
+.whitelist-profile-dialog-layer:not([hidden]) { pointer-events: auto !important; }
 #side-panel-overlay:not(.active) {
     display: none !important;
     visibility: hidden !important;
@@ -814,21 +596,13 @@ a,
 .nav-item,
 .nav-dropdown-toggle,
 .account-switcher,
-.settings-tab-btn {
-    touch-action: manipulation;
-}
+.settings-tab-btn { touch-action: manipulation; }
 
 @media (max-width: 900px), (hover: none), (pointer: coarse) {
-    .ambient-layer {
-        display: none !important;
-    }
-
+    .ambient-layer { display: none !important; }
     .live-status-dot,
     .spin,
-    .staff-spotlight strong {
-        animation-duration: 1.2s !important;
-    }
-
+    .staff-spotlight strong { animation-duration: 1.2s !important; }
     .card,
     .sidebar,
     .side-panel,
@@ -838,14 +612,11 @@ a,
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
-
     .view-section,
     .card,
     .nav-item,
     .nav-dropdown-toggle,
-    .btn {
-        transition-duration: .12s !important;
-    }
+    .btn { transition-duration: .12s !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -859,7 +630,6 @@ a,
     }
 }
 
-/* Core interaction fix v1.8 */
 #mobile-sidebar-overlay[aria-hidden="true"],
 #side-panel-overlay:not(.active),
 .whitelist-profile-dialog-layer[hidden] {
@@ -870,16 +640,10 @@ a,
 }
 
 @media (max-width: 900px) {
-    body:not(.mobile-sidebar-open) .sidebar {
-        pointer-events: none !important;
-    }
-
-    body.mobile-sidebar-open .sidebar {
-        pointer-events: auto !important;
-    }
+    body:not(.mobile-sidebar-open) .sidebar { pointer-events: none !important; }
+    body.mobile-sidebar-open .sidebar { pointer-events: auto !important; }
 }
 
-/* Remove expensive blur effects that can freeze low-power devices. */
 .top-nav,
 .glass,
 .account-menu,
@@ -896,4 +660,74 @@ a,
 .staff-profile-card,
 .whitelist-table tbody tr {
     contain: layout paint style;
+}
+
+/* ================================================================
+   LAYOUT HOTFIX — 2026-09-12
+   Mobile drawer must behave as a drawer, never as a half-width column.
+   ================================================================ */
+@media (max-width: 900px) {
+    body {
+        display: block !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        overflow: hidden !important;
+    }
+
+    .main-wrapper {
+        display: flex !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+    }
+
+    .sidebar {
+        left: 0 !important;
+        right: auto !important;
+        margin: 0 !important;
+    }
+
+    body:not(.mobile-sidebar-open) .sidebar {
+        transform: translate3d(calc(-100% - 20px), 0, 0) !important;
+        visibility: hidden !important;
+    }
+
+    body.mobile-sidebar-open .sidebar {
+        transform: translate3d(0, 0, 0) !important;
+        visibility: visible !important;
+    }
+
+    #mobile-sidebar-overlay {
+        width: 100vw !important;
+        height: 100dvh !important;
+    }
+
+    .top-nav,
+    .content-area {
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+    }
+}
+
+@media (max-width: 440px) {
+    .sidebar {
+        width: calc(100vw - 14px) !important;
+        max-width: calc(100vw - 14px) !important;
+    }
+
+    .sidebar-header {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    .nav-links {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .sidebar-bottom {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
 }
