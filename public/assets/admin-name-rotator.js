@@ -47,42 +47,45 @@
         const style = document.createElement('style');
         style.id = 'admin-name-rotator-styles';
         style.textContent = `
-            /* Center the header content; the badge itself stays content-sized. */
             .top-nav {
-                justify-content: center !important;
+                display: flex !important;
                 align-items: center !important;
+                justify-content: center !important;
             }
             .top-nav-left {
                 display: flex !important;
+                flex-direction: row !important;
                 align-items: center !important;
                 justify-content: center !important;
                 width: 100% !important;
                 min-width: 0 !important;
-                gap: 12px !important;
+                gap: 0 !important;
             }
             .top-nav-left .server-identity.registered-handler-badge {
-                margin-inline: auto !important;
+                margin: 3px auto !important;
             }
             #mobile-menu-toggle {
                 flex: 0 0 auto !important;
             }
 
-            /* Compact content-width registered handler badge. */
             .server-identity.registered-handler-badge {
-                position: relative !important;
                 display: inline-flex !important;
+                flex-direction: row !important;
                 align-items: center !important;
                 justify-content: center !important;
+                gap: 8px !important;
                 width: max-content !important;
                 max-width: min(90vw, 520px) !important;
                 min-width: 0 !important;
                 flex: 0 0 auto !important;
                 align-self: center !important;
+                height: auto !important;
+                min-height: 34px !important;
+                margin: 3px auto !important;
+                padding: 6px 16px !important;
                 box-sizing: border-box !important;
-                margin: 0 !important;
-                padding: 5px 14px !important;
-                gap: 8px !important;
                 overflow: hidden !important;
+                white-space: nowrap !important;
                 border: 1px solid var(--border) !important;
                 border-radius: 999px !important;
                 background: var(--bg-card) !important;
@@ -92,29 +95,40 @@
                 -webkit-backdrop-filter: none !important;
             }
 
+            .server-identity.registered-handler-badge::before {
+                content: '' !important;
+                width: 7px !important;
+                height: 7px !important;
+                flex: 0 0 7px !important;
+                border-radius: 50% !important;
+                background: var(--success) !important;
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 10%, transparent) !important;
+            }
+
             .server-identity.registered-handler-badge strong {
-                flex: 0 0 auto !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                width: auto !important;
                 min-width: 0 !important;
+                flex: 0 0 auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                overflow: hidden !important;
+                overflow: visible !important;
                 color: var(--text-sec) !important;
                 font-family: 'Inter', sans-serif !important;
-                font-size: 7px !important;
+                font-size: 8px !important;
                 font-weight: 700 !important;
                 line-height: 1 !important;
                 letter-spacing: .09em !important;
-                text-align: left !important;
                 text-transform: uppercase !important;
                 white-space: nowrap !important;
             }
 
             .server-identity.registered-handler-badge span {
-                --handler-font-size: 9px;
-                --handler-scale: 1;
-                min-width: 0 !important;
+                display: inline-block !important;
                 width: auto !important;
-                max-width: min(360px, 55vw) !important;
+                min-width: 0 !important;
+                max-width: 360px !important;
                 flex: 0 1 auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
@@ -122,39 +136,18 @@
                 text-overflow: ellipsis !important;
                 color: var(--text-main) !important;
                 font-family: 'Inter', sans-serif !important;
-                font-size: var(--handler-font-size) !important;
-                font-weight: 700 !important;
-                line-height: 1 !important;
-                letter-spacing: -.02em !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                line-height: 1.2 !important;
+                letter-spacing: 0 !important;
                 text-align: left !important;
                 text-transform: none !important;
                 transform: none !important;
-                transform-origin: left center !important;
                 white-space: nowrap !important;
             }
 
-            /* Subtle separator without enlarging the badge into a banner. */
-            .server-identity.registered-handler-badge::before {
-                content: '';
-                width: 5px;
-                height: 5px;
-                flex: 0 0 5px;
-                border-radius: 50%;
-                background: var(--success);
-                box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 10%, transparent);
-            }
-
-            .server-identity.registered-handler-badge::after {
-                content: '';
-                width: 1px;
-                height: 13px;
-                flex: 0 0 1px;
-                margin: 0 1px;
-                background: var(--border);
-            }
-
             .admin-name-rotator {
-                display: block;
+                display: inline-block !important;
                 max-width: 100%;
                 transition: opacity ${FADE_DURATION_MS}ms ease, transform ${FADE_DURATION_MS}ms ease;
                 will-change: opacity, transform;
