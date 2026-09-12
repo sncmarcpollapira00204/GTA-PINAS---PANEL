@@ -211,18 +211,18 @@
 
     root.addEventListener('input', (event) => {
       if (event.target.matches('#dee-title,#dee-description,#dee-author,#dee-footer,#dee-image,#dee-thumbnail')) {
-        scheduleRender();
+        scheduleRender(0);
       }
     });
     root.addEventListener('change', (event) => {
       if (event.target.matches('#dee-title,#dee-description,#dee-color,#dee-author,#dee-footer,#dee-image,#dee-thumbnail')) {
-        scheduleRender();
+        scheduleRender(0);
       }
     });
     root.addEventListener('click', (event) => {
-      if (event.target.closest('#dee-load-button,#dee-reset,#dee-preview-button')) scheduleRender(250);
+      if (event.target.closest('#dee-load-button,#dee-reset,#dee-preview-button')) scheduleRender(0);
     });
-    scheduleRender(120);
+    scheduleRender(0);
   }
 
   function boot() {
