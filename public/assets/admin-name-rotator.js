@@ -47,10 +47,19 @@
         const style = document.createElement('style');
         style.id = 'admin-name-rotator-styles';
         style.textContent = `
+            /* Global header contract: identical slim bar on every view. */
             .top-nav {
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
+                height: 58px !important;
+                min-height: 58px !important;
+                max-height: 58px !important;
+                padding: 0 22px !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+                flex: 0 0 58px !important;
+                overflow: hidden !important;
             }
             .top-nav-left {
                 display: flex !important;
@@ -59,10 +68,16 @@
                 justify-content: center !important;
                 width: 100% !important;
                 min-width: 0 !important;
+                min-height: 0 !important;
+                max-height: 58px !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 gap: 0 !important;
+                box-sizing: border-box !important;
             }
             #mobile-menu-toggle {
                 flex: 0 0 auto !important;
+                margin: 0 !important;
             }
 
             .server-identity.registered-handler-badge {
@@ -77,6 +92,7 @@
                 flex: 0 1 auto !important;
                 align-self: center !important;
                 height: auto !important;
+                max-height: 28px !important;
                 margin: 0 !important;
                 padding: 4px 12px !important;
                 box-sizing: border-box !important;
@@ -163,8 +179,15 @@
             }
 
             @media (max-width: 620px) {
+                .top-nav {
+                    height: 58px !important;
+                    min-height: 58px !important;
+                    max-height: 58px !important;
+                    padding: 0 10px !important;
+                }
                 .top-nav-left {
                     gap: 6px !important;
+                    max-height: 58px !important;
                 }
                 .server-identity.registered-handler-badge {
                     max-width: calc(100vw - 64px) !important;
