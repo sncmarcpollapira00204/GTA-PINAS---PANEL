@@ -51,8 +51,6 @@
       .gta-user{display:flex;align-items:center;gap:9px;margin-bottom:12px}.gta-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#5865f2;color:#fff;font-size:10px;font-weight:800}.gta-user strong{font-size:11px}.gta-user span{display:block;margin-top:2px;color:#949ba4;font-size:9px}
       .gta-embed{max-width:560px;background:#2b2d31;border-left:4px solid #5865f2;border-radius:4px;padding:12px;color:#dbdee1;min-height:90px;box-sizing:border-box}
       .gta-embed h3{font-size:16px;margin:0 0 6px}.gta-embed p{font-size:11px;white-space:pre-wrap;line-height:1.55;margin:0}.gta-embed img{max-width:100%;border-radius:4px;margin-top:9px;display:block}.gta-embed .thumb{float:right;width:76px;height:76px;object-fit:cover;margin:0 0 7px 9px}.gta-embed small{display:block;margin-top:10px;color:#949ba4}
-      .gta-embed h1{font-size:20px;font-weight:700;line-height:1.3;margin:4px 0 2px}
-      .gta-embed .gta-preview-quote{display:block;border-left:3px solid #4e5058;padding-left:8px;margin:2px 0;line-height:1.45;font-size:11px;color:#dbdee1}
       @media(max-width:920px){.gta-dee-grid{grid-template-columns:1fr}.gta-dee-preview{position:static}}
       @media(max-width:620px){.gta-dee-form{grid-template-columns:1fr}.gta-dee-field.full{grid-column:auto}.gta-dee-link{grid-template-columns:1fr}.gta-dee-link button{width:100%}.gta-dee-actions{flex-direction:column}.gta-dee-actions .btn{width:100%}}
     `;
@@ -80,26 +78,37 @@
 
   function parseDiscordMarkdown(text) {
     if (!text) return '';
-    const safeText = esc(text);
-    const lines = safeText.split('\n');
-    const output = [];
 
-    lines.forEach((line, index) => {
+    // 1. Sanitize HTML input first to prevent XSS
+    let safe = esc(text);
+
+    // 2. Line-by-Line / Block Rules (Headers & Blockquotes)
+    let lines = safe.split('\n').map((line) => {
+      // H1 Heading
       if (line.startsWith('# ')) {
-        output.push(`<h1>${line.slice(2)}</h1>`);
-        return;
+        return `<h1 style="margin: 4px 0 2px 0; font-size: 1.25rem; font-weight: 700; line-height: 1.2;">${line.slice(2)}</h1>`;
       }
-
+      // Blockquote
       if (line.startsWith('> ')) {
-        output.push(`<blockquote class="gta-preview-quote">${line.slice(2)}</blockquote>`);
-        return;
+        return `<blockquote style="border-left: 4px solid #4e5058; margin: 2px 0; padding-left: 8px; color: #dbdee1;">${line.slice(2)}</blockquote>`;
       }
-
-      if (index > 0) output.push('<br>');
-      output.push(line);
+      return line;
     });
 
-    return output.join('');
+    let parsed = lines.join('<br>');
+
+    // 3. Inline Rules (Bold, Italic, Spoiler, Inline Code)
+    parsed = parsed
+      // Bold: **text**
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Spoiler: ||text||
+      .replace(/\|\|(.*?)\|\|/g, '<span style="background-color: #2b2d31; color: transparent; border-radius: 3px; padding: 0 2px; cursor: pointer;" onclick="this.style.color=\'#dbdee1\'">$1</span>')
+      // Inline Code: `text`
+      .replace(/`(.*?)`/g, '<code style="background-color: #2b2d31; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.85em;">$1</code>')
+      // Italic: *text* or _text_
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    return parsed;
   }
 
   function preview() {
@@ -109,17 +118,23 @@
     const color = /^#[0-9a-f]{6}$/i.test(data.color) ? data.color : '#5865F2';
     const image = safeUrl(data.image);
     const thumb = safeUrl(data.thumbnail);
-    const description = parseDiscordMarkdown(data.description);
+    const description = data.description;
+
     box.innerHTML = `
       <div class="gta-user"><div class="gta-avatar">GP</div><div><strong>GTA Pinas Treasury</strong><span>Today</span></div></div>
       <div class="gta-embed" style="border-left-color:${esc(color)}">
         ${thumb ? `<img class="thumb" src="${esc(thumb)}" alt="">` : ''}
         ${data.author ? `<div style="font-size:10px;font-weight:700;margin-bottom:7px">${esc(data.author)}</div>` : ''}
         ${data.title ? `<h3>${esc(data.title)}</h3>` : ''}
-        <div class="gta-preview-description">${description || '<span style="color:#949ba4">Start typing to preview the embed.</span>'}</div>
+        <div class="gta-preview-description"></div>
         ${image ? `<img src="${esc(image)}" alt="">` : ''}
         ${data.footer ? `<small>${esc(data.footer)}</small>` : ''}
       </div>`;
+
+    const element = box.querySelector('.gta-preview-description');
+    if (element) {
+      element.innerHTML = parseDiscordMarkdown(description);
+    }
   }
 
   async function loadChannels() {
