@@ -62,7 +62,7 @@
                 gap: 0 !important;
             }
             .top-nav-left .server-identity.registered-handler-badge {
-                margin: 3px auto !important;
+                margin: 2px auto !important;
             }
             #mobile-menu-toggle {
                 flex: 0 0 auto !important;
@@ -73,16 +73,16 @@
                 flex-direction: row !important;
                 align-items: center !important;
                 justify-content: center !important;
-                gap: 8px !important;
+                gap: 6px !important;
                 width: max-content !important;
                 max-width: min(90vw, 520px) !important;
                 min-width: 0 !important;
-                flex: 0 0 auto !important;
+                flex: 0 1 auto !important;
                 align-self: center !important;
                 height: auto !important;
-                min-height: 34px !important;
-                margin: 3px auto !important;
-                padding: 6px 16px !important;
+                min-height: 28px !important;
+                margin: 2px auto !important;
+                padding: 4px 12px !important;
                 box-sizing: border-box !important;
                 overflow: hidden !important;
                 white-space: nowrap !important;
@@ -95,31 +95,22 @@
                 -webkit-backdrop-filter: none !important;
             }
 
-            .server-identity.registered-handler-badge::before {
-                content: '' !important;
-                width: 7px !important;
-                height: 7px !important;
-                flex: 0 0 7px !important;
-                border-radius: 50% !important;
-                background: var(--success) !important;
-                box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 10%, transparent) !important;
-            }
-
             .server-identity.registered-handler-badge strong {
                 display: inline-flex !important;
                 align-items: center !important;
                 width: auto !important;
                 min-width: 0 !important;
-                flex: 0 0 auto !important;
+                flex: 0 1 auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                overflow: visible !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
                 color: var(--text-sec) !important;
                 font-family: 'Inter', sans-serif !important;
-                font-size: 8px !important;
+                font-size: 10px !important;
                 font-weight: 700 !important;
                 line-height: 1 !important;
-                letter-spacing: .09em !important;
+                letter-spacing: .06em !important;
                 text-transform: uppercase !important;
                 white-space: nowrap !important;
             }
@@ -166,38 +157,47 @@
 
             @media (max-width: 900px) {
                 .server-identity.registered-handler-badge {
-                    max-width: min(84vw, 420px) !important;
-                    padding: 5px 12px !important;
+                    max-width: calc(100vw - 72px) !important;
+                    padding: 4px 10px !important;
+                    gap: 6px !important;
                 }
                 .server-identity.registered-handler-badge span {
-                    max-width: 46vw !important;
+                    max-width: min(48vw, 300px) !important;
                 }
             }
 
             @media (max-width: 620px) {
                 .top-nav-left {
-                    gap: 8px !important;
+                    gap: 6px !important;
                 }
                 .server-identity.registered-handler-badge {
-                    max-width: calc(100vw - 88px) !important;
-                    padding: 5px 10px !important;
-                    gap: 7px !important;
+                    max-width: calc(100vw - 64px) !important;
+                    padding: 4px 8px !important;
+                    gap: 5px !important;
                 }
                 .server-identity.registered-handler-badge strong {
-                    font-size: 6px !important;
+                    font-size: 10px !important;
+                    letter-spacing: .04em !important;
                 }
                 .server-identity.registered-handler-badge span {
-                    max-width: calc(100vw - 170px) !important;
-                    font-size: 8px !important;
+                    max-width: calc(100vw - 160px) !important;
+                    font-size: 12px !important;
                 }
             }
 
             @media (max-width: 480px) {
-                .server-identity.registered-handler-badge strong {
-                    display: none !important;
+                .server-identity.registered-handler-badge {
+                    max-width: calc(100vw - 56px) !important;
+                    padding: 4px 7px !important;
+                    gap: 4px !important;
                 }
-                .server-identity.registered-handler-badge::after {
-                    display: none !important;
+                .server-identity.registered-handler-badge strong {
+                    max-width: 42vw !important;
+                    font-size: 9px !important;
+                }
+                .server-identity.registered-handler-badge span {
+                    max-width: 43vw !important;
+                    font-size: 11px !important;
                 }
             }
 
