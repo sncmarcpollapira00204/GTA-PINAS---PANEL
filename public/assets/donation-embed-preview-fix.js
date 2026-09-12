@@ -4,9 +4,11 @@
   /*
    * Authoritative renderer for the Donation Embed Editor preview.
    *
-   * This file intentionally renders the complete preview instead of trying
-   * to patch individual nodes produced by another renderer. That prevents
-   * headings, title, author, footer, images, and color from getting lost.
+   * Important rules:
+   * - Never use input placeholders or hardcoded field values as embed content.
+   * - Empty fields are omitted completely from the embed.
+   * - Input updates are debounced so typing stays smooth.
+   * - Event delegation is bound once per editor root, preventing duplicate listeners.
    */
 
   const ROOT_ID = 'view-donation-embed-editor';
@@ -34,9 +36,22 @@
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
+  function getInput(id) {
+    const element = document.getElementById(id);
+    return element && 'value' in element ? element : null;
+  }
+
+  function inputText(id) {
+    const element = getInput(id);
+    return element ? String(element.value ?? '').trim() : '';
+  }
+
   function safeUrl(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return '';
+
     try {
-      const url = new URL(String(value || '').trim());
+      const url = new URL(raw);
       return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
     } catch (_) {
       return '';
@@ -55,6 +70,8 @@
       }
     }
 
+    // Color controls the embed styling, not an embed content field, so a
+    // visual fallback is safe when the color input itself is empty/invalid.
     return '#5865F2';
   }
 
@@ -262,22 +279,9 @@
         line-height: 14px;
         word-break: break-word;
       }
-
-      #${PREVIEW_ID} .gta-preview-placeholder {
-        color: #949ba4;
-        font-size: 13px;
-        line-height: 19px;
-      }
     `;
 
     document.head.appendChild(style);
-  }
-
-  function inputValue(id, fallback = '') {
-    const element = document.getElementById(id);
-    if (!element) return fallback;
-    const value = String(element.value ?? '').trim();
-    return value || fallback;
   }
 
   function inlineMarkdown(value) {
@@ -318,11 +322,11 @@
 
   function renderDescription(value) {
     const source = String(value ?? '').replace(/\r\n?/g, '\n');
-    if (!source) return '';
+    if (!source.trim()) return '';
 
     return source.split('\n').map((line) => {
       // Discord heading syntax is line-based: #, ##, or ### followed by a space.
-      // The regex removes the hashes from the output and keeps only the heading text.
+      // The regex removes the hashes from the rendered HTML.
       const heading = line.match(/^\s*(#{1,3})\s+(.+?)\s*$/);
       if (heading) {
         const level = heading[1].length;
@@ -340,16 +344,24 @@
   }
 
   function getData() {
+    const title = inputText('dee-title');
+    const descriptionRaw = getInput('dee-description')?.value ?? '';
+    const author = inputText('dee-author');
+    const footer = inputText('dee-footer');
+    const image = safeUrl(inputText('dee-image'));
+    const thumbnail = safeUrl(inputText('dee-thumbnail'));
+    const color = normalizeColor(inputText('dee-color'));
+
     return {
-      // Use the field's placeholder text as the initial preview value so the
-      // preview does not appear to ignore these configured defaults.
-      title: inputValue('dee-title', 'Donation Price List'),
-      description: String(document.getElementById('dee-description')?.value ?? ''),
-      color: normalizeColor(inputValue('dee-color', '#2563EB')),
-      author: inputValue('dee-author', 'GTA Pinas Treasury'),
-      footer: inputValue('dee-footer', 'GTA Pinas Treasury'),
-      image: safeUrl(document.getElementById('dee-image')?.value || ''),
-      thumbnail: safeUrl(document.getElementById('dee-thumbnail')?.value || ''),
+      // Content fields use ONLY .value. Never read .placeholder and never
+      // substitute hardcoded strings when the user leaves a field empty.
+      title,
+      description: String(descriptionRaw),
+      author,
+      footer,
+      image,
+      thumbnail,
+      color,
     };
   }
 
@@ -371,15 +383,15 @@
       : '';
 
     const thumbnailHtml = data.thumbnail
-      ? `<img class="gta-preview-thumb" src="${esc(data.thumbnail)}" alt="">`
+      ? `<img class="gta-preview-thumb" src="${esc(data.thumbnail)}" alt="" loading="lazy">`
       : '';
 
     const descriptionHtml = description
       ? `<div class="gta-preview-description">${description}</div>`
-      : `<div class="gta-preview-placeholder">Start typing to preview the embed.</div>`;
+      : '';
 
     const imageHtml = data.image
-      ? `<img class="gta-preview-image" src="${esc(data.image)}" alt="">`
+      ? `<img class="gta-preview-image" src="${esc(data.image)}" alt="" loading="lazy">`
       : '';
 
     const footerHtml = data.footer
@@ -415,6 +427,7 @@
   function scheduleRender(delay = 100) {
     window.clearTimeout(renderTimer);
     renderTimer = window.setTimeout(() => {
+      renderTimer = null;
       renderPreview();
     }, delay);
   }
@@ -423,12 +436,12 @@
     if (!root || root.dataset.gtaAuthoritativePreviewBound === '1') return;
     root.dataset.gtaAuthoritativePreviewBound = '1';
 
-    // Event delegation means dynamically-created editor inputs are supported too.
+    // Delegation supports inputs that are inserted/rebuilt dynamically.
+    // The capture phase also sees input events before competing bubbling
+    // handlers, while the debounce lets those handlers finish first.
     root.addEventListener('input', (event) => {
       const target = event.target;
       if (!target?.id || !INPUT_IDS.has(target.id)) return;
-      // Delay slightly so the other preview renderer cannot overwrite this
-      // authoritative render in the same input event/animation frame.
       scheduleRender(100);
     }, true);
 
@@ -438,30 +451,29 @@
       scheduleRender(100);
     }, true);
 
+    // Buttons can replace/reset editor fields. Render after those operations
+    // have completed instead of rendering synchronously during the click.
     root.addEventListener('click', (event) => {
-      if (event.target?.closest?.('#dee-load-button, #dee-reset, #dee-preview-button')) {
-        scheduleRender(250);
-      }
+      const target = event.target?.closest?.('#dee-load-button, #dee-reset, #dee-preview-button');
+      if (target) scheduleRender(250);
     }, true);
   }
 
   function boot() {
-    installStyles();
+    window.clearTimeout(bootTimer);
 
     const root = document.getElementById(ROOT_ID);
-    if (root) {
-      bindRoot(root);
-      renderPreview();
-      window.clearTimeout(bootTimer);
+    if (!root) {
+      bootTimer = window.setTimeout(boot, 100);
       return;
     }
 
-    // The Embed Editor is created dynamically by donation-embed-editor.js.
-    window.clearTimeout(bootTimer);
-    bootTimer = window.setTimeout(boot, 100);
+    bindRoot(root);
+    installStyles();
+    renderPreview();
   }
 
-  // Other panel code can explicitly request the authoritative renderer.
+  // Expose a manual render hook for other donation preview code.
   window.__gtaRenderDonationEmbedPreview = renderPreview;
 
   if (document.readyState === 'loading') {
