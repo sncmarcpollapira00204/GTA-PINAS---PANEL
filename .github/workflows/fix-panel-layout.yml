@@ -1,0 +1,65 @@
+name: Fix panel layout
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-layout:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply layout fixes
+        shell: bash
+        run: |
+          cat >> public/assets/mobile-responsive.css <<'EOF'
+
+/* Desktop panel layout fix */
+@media (min-width: 901px) {
+    /* Keep Management directly below the workspace navigation instead of
+       pushing it to the bottom of the sidebar. Keep the account panel pinned. */
+    .sidebar > .nav-links {
+        flex: 0 0 auto !important;
+        min-height: 0 !important;
+    }
+
+    .sidebar > .nav-dropdown[data-nav-group="management"] {
+        flex: 0 0 auto !important;
+        margin-top: 6px !important;
+    }
+
+    .sidebar > .sidebar-bottom {
+        margin-top: auto !important;
+        flex: 0 0 auto !important;
+    }
+
+    /* Let page content use the full area beside the sidebar. */
+    .main-wrapper > .content-area {
+        width: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        min-width: 0 !important;
+    }
+}
+EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/mobile-responsive.css
+          git commit -m "fix: correct panel sidebar and content layout" || true
+          git push
+
+      - name: Remove temporary workflow
+        if: success()
+        shell: bash
+        run: |
+          rm -f .github/workflows/fix-panel-layout.yml
+          git add .github/workflows/fix-panel-layout.yml
+          git commit -m "chore: remove temporary layout workflow" || true
+          git push
