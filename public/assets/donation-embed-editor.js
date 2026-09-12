@@ -80,13 +80,14 @@
   function parseDiscordMarkdown(text) {
     if (!text) return '';
     const safeText = esc(text);
-    const lines = safeText.split('\n').map((line) => {
+    const lines = safeText.split('\n');
+    return lines.map((line, index) => {
       if (line.startsWith('# ')) {
-        return `<h1 class="text-xl font-bold my-1">${line.slice(2)}</h1>`;
+        return `<h1 style="margin:4px 0 2px 0;font-size:1.25rem;font-weight:700;line-height:1.3;">${line.slice(2)}</h1>`;
       }
-      return line;
-    });
-    return lines.join('<br>');
+      if (index === 0 || lines[index - 1].startsWith('# ')) return line;
+      return `<br>${line}`;
+    }).join('');
   }
 
   function preview() {
