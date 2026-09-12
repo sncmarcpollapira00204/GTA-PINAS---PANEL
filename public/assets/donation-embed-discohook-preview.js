@@ -130,6 +130,7 @@
   }
 
   function render() {
+    if (document.getElementById('view-donation-embed-editor')) return;
     const box = document.getElementById('dee-preview');
     if (!box || state.rendering) return;
     state.rendering = true;
@@ -180,6 +181,7 @@
   window.__gtaRenderDonationEmbedPreview = render;
 
   function scheduleRender() {
+    if (document.getElementById('view-donation-embed-editor')) return;
     if (state.renderQueued) return;
     state.renderQueued = true;
     window.requestAnimationFrame(() => {
@@ -189,12 +191,18 @@
   }
 
   function observeBox() {
+    if (document.getElementById('view-donation-embed-editor')) {
+      state.observer?.disconnect();
+      state.observer = null;
+      state.box = null;
+      return;
+    }
     const box = document.getElementById('dee-preview');
     if (!box || state.box === box) return;
     state.observer?.disconnect();
     state.box = box;
     state.observer = new MutationObserver(() => {
-      if (state.rendering) return;
+      if (state.rendering || document.getElementById('view-donation-embed-editor')) return;
       if (box.firstElementChild?.getAttribute('data-dh-authoritative') !== '1') scheduleRender();
     });
     state.observer.observe(box, { childList: true, subtree: true });
@@ -202,16 +210,24 @@
 
   function ensureRootObserver() {
     const root = document.getElementById('view-donation-embed-editor');
-    if (!root || state.root === root) return;
+    if (root) {
+      state.rootObserver?.disconnect();
+      state.rootObserver = null;
+      state.root = null;
+      return;
+    }
+    const rootView = document.getElementById('view-donation-embed-editor');
+    if (!rootView || state.root === rootView) return;
     state.rootObserver?.disconnect();
-    state.root = root;
+    state.root = rootView;
     state.rootObserver = new MutationObserver(() => {
+      if (document.getElementById('view-donation-embed-editor')) return;
       observeBox();
       scheduleRender();
     });
-    state.rootObserver.observe(root, { childList: true });
-    root.addEventListener('input', scheduleRender, true);
-    root.addEventListener('click', (event) => {
+    state.rootObserver.observe(rootView, { childList: true });
+    rootView.addEventListener('input', scheduleRender, true);
+    rootView.addEventListener('click', (event) => {
       const target = event.target;
       if (target?.closest?.('#dee-load-button')) window.setTimeout(loadLinked, 200);
       if (target?.closest?.('#dee-reset')) {
@@ -222,6 +238,7 @@
   }
 
   async function loadLinked() {
+    if (document.getElementById('view-donation-embed-editor')) return;
     const url = String(document.getElementById('dee-message-url')?.value || '').trim();
     if (!url) return;
     const id = ++state.requestId;
