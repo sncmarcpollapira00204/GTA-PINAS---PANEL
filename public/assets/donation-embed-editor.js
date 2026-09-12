@@ -33,14 +33,19 @@
     if(!text)return '';
     const protectedParts=[];
     const protect=(html)=>{const token=`\u0001${protectedParts.length}\u0002`;protectedParts.push(html);return token;};
-    let lines=String(text).split('\n').map((rawLine)=>{
-      const heading=rawLine.match(/^(#{1,3})\s(.+)$/);
-      if(heading){const level=heading[1].length;const size={1:'1.25rem',2:'1.1rem',3:'1rem'}[level];return `<h${level} style="margin:4px 0 2px;font-size:${size};font-weight:700;line-height:1.2">${esc(heading[2])}</h${level}>`;}
-      const quote=rawLine.match(/^>\s?(.*)$/);
-      if(quote)return `<blockquote>${esc(quote[1])}</blockquote>`;
-      return esc(rawLine);
+    let lines=String(text).split('\n').map(line=>{
+      if(line.startsWith('# '))return `<h1 style="margin: 4px 0 2px 0; font-size: 1.25rem; font-weight: 700; line-height: 1.2;">${esc(line.slice(2))}</h1>`;
+      if(line.startsWith('> '))return `<blockquote style="border-left: 4px solid #4e5058; margin: 2px 0; padding-left: 8px; color: #dbdee1;">${esc(line.slice(2))}</blockquote>`;
+      return esc(line);
     });
-    let parsed=lines.join('<br>');
+    let parsed='';
+    for(let i=0;i<lines.length;i++){
+      parsed+=lines[i];
+      if(i<lines.length-1){
+        const isCurrentBlock=lines[i].endsWith('</h1>')||lines[i].endsWith('</blockquote>');
+        if(!isCurrentBlock)parsed+='<br>';
+      }
+    }
     parsed=parsed.replace(/```([\s\S]*?)```/g,(_,code)=>protect(`<pre style="background:#1e1f22;border:1px solid #3f4147;border-radius:4px;padding:7px;white-space:pre-wrap;font-family:Consolas,monospace">${code.trim()}</pre>`))
       .replace(/`([^`\n]+)`/g,(_,code)=>protect(`<code>${code}</code>`))
       .replace(/\|\|([\s\S]*?)\|\|/g,(_,value)=>protect(`<span class="gta-spoiler" title="Click to reveal">${value}</span>`))
