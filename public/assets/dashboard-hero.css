@@ -302,3 +302,154 @@ html[data-theme="light"] #view-dashboard .dashboard-card {
     #view-dashboard .dashboard-brand-copy,
     #view-dashboard .dashboard-stat-card { transition: none !important; }
 }
+
+/* ============================================================
+   PANEL RESPONSIVENESS — phones + tablets only.
+   Desktop rules above remain unchanged at 901px+.
+============================================================ */
+
+@media (max-width: 900px) {
+    html, body { max-width: 100%; overflow-x: hidden; }
+    body { display: flex; min-width: 0; }
+    .main-wrapper { min-width: 0; width: 100%; }
+    .content-area { min-width: 0; width: 100%; overflow-x: hidden; }
+
+    .top-nav { padding: 0 20px; gap: 12px; }
+    .search-bar { width: min(300px, 42vw); min-width: 0; }
+    .user-profile { min-width: 0; }
+
+    .page-header,
+    .table-controls { gap: 16px; flex-wrap: wrap; }
+    .page-header > *,
+    .table-controls > * { min-width: 0; max-width: 100%; }
+
+    .card,
+    .panel,
+    .table-container,
+    .dashboard-card { min-width: 0; max-width: 100%; }
+
+    table { min-width: 0; }
+    .table-container { overflow-x: auto; max-width: 100%; }
+
+    /* Donation/embed editor and preview containers stack on tablet/mobile. */
+    #view-donation-embed-editor .gta-dee-editor-grid,
+    #view-donation-embed-editor .gta-dee-grid,
+    #view-donation-embed-editor .gta-dee-layout,
+    #view-donation-embed-editor .gta-dee-columns,
+    #view-donation-embed-editor .gta-dee-preview-grid,
+    #view-donation-embed-editor .embed-editor-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    #view-donation-embed-editor .gta-dee-editor-grid,
+    #view-donation-embed-editor .gta-dee-grid,
+    #view-donation-embed-editor .gta-dee-layout,
+    #view-donation-embed-editor .gta-dee-columns,
+    #view-donation-embed-editor .gta-dee-preview-grid,
+    #view-donation-embed-editor .embed-editor-grid {
+        display: grid !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    #view-donation-embed-editor .gta-dee-editor-grid > *,
+    #view-donation-embed-editor .gta-dee-grid > *,
+    #view-donation-embed-editor .gta-dee-layout > *,
+    #view-donation-embed-editor .gta-dee-columns > *,
+    #view-donation-embed-editor .gta-dee-preview-grid > *,
+    #view-donation-embed-editor .embed-editor-grid > * {
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    #view-donation-embed-editor .gta-dee-preview,
+    #view-donation-embed-editor #dee-preview,
+    #view-donation-embed-editor .gta-preview,
+    #view-donation-embed-editor .gta-preview-card,
+    #view-donation-embed-editor .gta-dee-preview-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow-x: auto !important;
+    }
+
+    #view-donation-embed-editor input,
+    #view-donation-embed-editor textarea,
+    #view-donation-embed-editor select,
+    #view-donation-embed-editor button,
+    #view-donation-embed-editor .gta-dee-field,
+    #view-donation-embed-editor .gta-dee-color-control {
+        max-width: 100%;
+    }
+
+    #view-donation-embed-editor input,
+    #view-donation-embed-editor textarea,
+    #view-donation-embed-editor select,
+    #view-donation-embed-editor .gta-dee-field {
+        width: 100%;
+    }
+
+    #view-donation-embed-editor textarea { resize: vertical; }
+    #view-donation-embed-editor .gta-dee-color-control { min-width: 0; }
+    #view-donation-embed-editor .gta-dee-color-text { width: auto; min-width: 0; }
+
+    #view-donation-embed-editor .gta-dee-link {
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: wrap;
+    }
+    #view-donation-embed-editor .gta-dee-link .gta-dee-field { min-width: 0; }
+    #view-donation-embed-editor .gta-dee-link button { width: auto; flex: 0 0 auto; }
+}
+
+@media (max-width: 620px) {
+    .top-nav { height: 64px; padding: 0 12px; }
+    .top-nav .search-bar { width: 100%; max-width: 220px; padding: 7px 11px; }
+    .top-nav .user-profile { gap: 8px; }
+    .top-nav .user-profile > span:not(.status-dot) { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .content-area { padding: 18px 12px; }
+    .page-header { margin-bottom: 20px; align-items: stretch; flex-direction: column; }
+    .page-header h1 { font-size: 24px; }
+    .page-header p { font-size: 13px; }
+
+    .card { padding: 16px; border-radius: 10px; }
+    .table-controls { padding: 12px; }
+    .table-container { border-radius: 10px; }
+
+    .btn { min-height: 40px; padding: 9px 13px; }
+    .btn-icon { min-width: 40px; min-height: 40px; }
+
+    #view-donation-embed-editor .gta-dee-link { gap: 8px; }
+    #view-donation-embed-editor .gta-dee-link button { width: 100%; }
+
+    #view-donation-embed-editor .gta-dee-color-control { gap: 8px; }
+    #view-donation-embed-editor .gta-dee-color-picker { flex: 0 0 40px; }
+
+    #view-donation-embed-editor .gta-dee-preview,
+    #view-donation-embed-editor #dee-preview,
+    #view-donation-embed-editor .gta-preview,
+    #view-donation-embed-editor .gta-preview-card,
+    #view-donation-embed-editor .gta-dee-preview-panel {
+        padding: 12px !important;
+        overflow-x: auto !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    #view-donation-embed-editor .gta-dee-preview * ,
+    #view-donation-embed-editor #dee-preview * {
+        max-width: 100%;
+    }
+
+    .table-container table { min-width: 620px; }
+}
+
+@media (min-width: 621px) and (max-width: 900px) {
+    .content-area { padding: 24px 20px; }
+    .card { padding: 20px; }
+
+    /* Two comfortable columns where content benefits from it on tablets. */
+    .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
