@@ -2,6 +2,7 @@
 
 (() => {
   const CORE_SRC = '/assets/access-logs-core.js';
+  let panelModeratorAccess = false;
 
   function loadCore() {
     if (window.__accessLogsCoreLoaded || document.querySelector(`script[src="${CORE_SRC}"]`)) return;
@@ -10,6 +11,17 @@
     script.src = CORE_SRC;
     script.async = false;
     document.body.appendChild(script);
+  }
+
+  async function loadPanelModeratorAccess() {
+    try {
+      const response = await fetch('/api/auth/me', { headers: { Accept: 'application/json' }, cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      panelModeratorAccess = data?.permissions?.staffManagement === true || data?.permissions?.accessLogs === true;
+    } catch (_) {
+      panelModeratorAccess = false;
+    }
   }
 
   function exposeAccessLogsNavigation() {
@@ -23,6 +35,33 @@
       view.hidden = false;
       view.removeAttribute('data-owner-only');
     }
+  }
+
+  function installRestrictedManagementGuard() {
+    if (window.__panelModeratorManagementGuardInstalled) return;
+    window.__panelModeratorManagementGuardInstalled = true;
+
+    document.addEventListener('click', (event) => {
+      const element = event.target?.closest?.('a,button,[data-target]');
+      if (!element || panelModeratorAccess) return;
+
+      const label = String(
+        element.getAttribute('title') ||
+        element.textContent ||
+        element.getAttribute('aria-label') ||
+        ''
+      ).replace(/\s+/g, ' ').trim().toLowerCase();
+
+      if (label.includes('manage staff') || label.includes('staff management')) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof window.showToast === 'function') {
+          window.showToast('Only Panel Moderator can access this.', 'error');
+        } else {
+          window.alert('Only Panel Moderator can access this.');
+        }
+      }
+    }, true);
   }
 
   function installSidebarLayout() {
@@ -151,7 +190,9 @@
 
   function boot() {
     loadCore();
+    loadPanelModeratorAccess();
     exposeAccessLogsNavigation();
+    installRestrictedManagementGuard();
     installSidebarLayout();
 
     if (document.body) {
