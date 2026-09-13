@@ -100,7 +100,7 @@
     </main>
 
     <aside id="ostPlayer" class="music-player ost-player" aria-label="GTA Pinas soundtrack control">
-        <audio id="loginOst" src="/assets/gtapinasmusic2.mp3?v=20260911-music5" preload="auto" autoplay loop></audio>
+        <audio id="loginOst" src="/assets/gtapinasmusic2.mp3?v=20260911-music5" preload="auto" loop></audio>
         <button id="ostToggle" class="ost-toggle" type="button" aria-label="Pause soundtrack" aria-pressed="true">
             <i class="fa-solid fa-pause"></i>
         </button>
@@ -161,8 +161,23 @@
         ostAudio.addEventListener('pause', updateOstState);
         ostAudio.addEventListener('ended', updateOstState);
         ostAudio.addEventListener('error', updateOstState);
-        document.addEventListener('DOMContentLoaded', playOst);
+
+        // Try on every login-page load. The browser may still block audible
+        // autoplay until the user has interacted with this site at least once.
         playOst();
+        window.addEventListener('load', playOst, { once: true });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && ostAudio.paused) playOst();
+        });
+
+        // Once the visitor interacts anywhere on the page, immediately resume
+        // the soundtrack if the browser had blocked the initial autoplay.
+        const resumeAfterInteraction = () => {
+            if (ostAudio.paused) playOst();
+        };
+        ['pointerdown', 'keydown', 'touchstart'].forEach(eventName => {
+            document.addEventListener(eventName, resumeAfterInteraction, { passive: true });
+        });
     </script>
 </body>
 </html>
