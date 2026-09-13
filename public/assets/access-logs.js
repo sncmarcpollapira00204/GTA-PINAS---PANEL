@@ -12,6 +12,19 @@
     document.body.appendChild(script);
   }
 
+  function exposeAccessLogsNavigation() {
+    document.querySelectorAll('[data-target="view-access-logs"]').forEach((element) => {
+      element.hidden = false;
+      element.removeAttribute('data-owner-only');
+    });
+
+    const view = document.getElementById('view-access-logs');
+    if (view) {
+      view.hidden = false;
+      view.removeAttribute('data-owner-only');
+    }
+  }
+
   function installSidebarLayout() {
     const sidebar = document.querySelector('.sidebar');
     if (!sidebar) return false;
@@ -138,10 +151,14 @@
 
   function boot() {
     loadCore();
+    exposeAccessLogsNavigation();
     installSidebarLayout();
 
     if (document.body) {
-      const observer = new MutationObserver(() => installSidebarLayout());
+      const observer = new MutationObserver(() => {
+        exposeAccessLogsNavigation();
+        installSidebarLayout();
+      });
       observer.observe(document.body, { childList: true, subtree: true });
     }
   }
