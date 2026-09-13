@@ -7,7 +7,7 @@ const { requireApiAuth } = require('../middleware/auth.middleware');
 const { requireCsrf } = require('../middleware/csrf.middleware');
 const { isPanelOwner } = require('../middleware/owner.middleware');
 const { isMediaManager } = require('../middleware/mediaManager.middleware');
-const { isStaffManager } = require('../middleware/staffManagement.middleware');
+const { isPanelModerator } = require('../middleware/staffManagement.middleware');
 
 const pageRouter = express.Router();
 const apiRouter = express.Router();
@@ -105,9 +105,6 @@ pageRouter.get('/discord/callback', loginRateLimit, async (req, res) => {
   authService.clearOAuthRedirectCookie(res);
 
   try {
-    // Resolve the redirect URI inside the protected callback flow so a malformed
-    // Railway/OAuth configuration is converted into the normal login error page
-    // instead of escaping as an Express 500.
     const redirectUri = authService.getRedirectUri(req, cookieRedirectUri);
 
     if (oauthError) {
@@ -171,6 +168,8 @@ pageRouter.get('/discord/callback', loginRateLimit, async (req, res) => {
 });
 
 apiRouter.get('/me', requireApiAuth, (req, res) => {
+  const panelModerator = isPanelModerator(req);
+
   return res.json({
     authenticated: true,
     user: req.auth.user,
@@ -181,9 +180,9 @@ apiRouter.get('/me', requireApiAuth, (req, res) => {
     },
     permissions: {
       ownerTools: isPanelOwner(req),
-      accessLogs: isPanelOwner(req),
+      accessLogs: panelModerator,
       mediaBranding: isMediaManager(req),
-      staffManagement: isStaffManager(req),
+      staffManagement: panelModerator,
     },
   });
 });
