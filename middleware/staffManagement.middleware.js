@@ -2,67 +2,66 @@
 
 const { isPanelOwner } = require('./owner.middleware');
 
-const DEFAULT_STAFF_MANAGER_ROLE_IDS = Object.freeze([
-  '1501546329682346064',
-  '1501546391082766416',
-  '1501546425492836393',
+const DEFAULT_PANEL_MODERATOR_ROLE_NAMES = Object.freeze([
+  'Panel Moderator',
 ]);
 
-function configuredStaffManagerRoleIds() {
-  const configured = String(
-    process.env.PANEL_STAFF_MANAGER_ROLE_IDS
-    || DEFAULT_STAFF_MANAGER_ROLE_IDS.join(',')
+function configuredPanelModeratorRoleIds() {
+  const configured = String(process.env.PANEL_MODERATOR_ROLE_IDS || '');
+  return new Set(
+    configured
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => /^\d{15,22}$/.test(value))
   );
-
-  const ids = configured
-    .split(',')
-    .map((value) => value.trim())
-    .filter((value) => /^\d{15,22}$/.test(value));
-
-  return new Set(ids.length ? ids : DEFAULT_STAFF_MANAGER_ROLE_IDS);
 }
 
-const STAFF_MANAGER_ROLE_IDS = configuredStaffManagerRoleIds();
+const PANEL_MODERATOR_ROLE_IDS = configuredPanelModeratorRoleIds();
 
-function isStaffManager(req) {
+function isPanelModerator(req) {
   if (isPanelOwner(req)) return true;
 
-  const roles = Array.isArray(req.auth?.user?.roles)
-    ? req.auth.user.roles.map(String)
-    : [];
+  const user = req.auth?.user || {};
+  const roleName = String(user.roleName || '').trim().toLowerCase();
+  if (DEFAULT_PANEL_MODERATOR_ROLE_NAMES.some((name) => name.toLowerCase() === roleName)) {
+    return true;
+  }
 
-  return roles.some((roleId) => STAFF_MANAGER_ROLE_IDS.has(roleId));
+  const roles = Array.isArray(user.roles) ? user.roles.map(String) : [];
+  return roles.some((roleId) => PANEL_MODERATOR_ROLE_IDS.has(roleId));
 }
 
-function logBlockedStaffManagement(req) {
+function logBlockedPanelModeratorAccess(req) {
   console.warn(
-    `[STAFF MANAGEMENT ACCESS] Blocked ${req.method} ${req.originalUrl} for Discord user ${req.auth?.user?.id || 'unknown'}.`
+    `[PANEL MODERATOR ACCESS] Blocked ${req.method} ${req.originalUrl} for Discord user ${req.auth?.user?.id || 'unknown'}.`
   );
 }
 
-function requireStaffManager(req, res, next) {
-  if (isStaffManager(req)) return next();
-  logBlockedStaffManagement(req);
+function requirePanelModerator(req, res, next) {
+  if (isPanelModerator(req)) return next();
+
+  logBlockedPanelModeratorAccess(req);
   return res.status(403).json({
-    error: 'Only Owner and Executive management can manage staff.',
-    code: 'STAFF_MANAGER_REQUIRED',
+    error: 'Only Panel Moderator can access this.',
+    code: 'PANEL_MODERATOR_REQUIRED',
   });
 }
 
-function requireStaffManagerHidden(req, res, next) {
-  if (isStaffManager(req)) return next();
-  logBlockedStaffManagement(req);
-  return res.status(404).json({
-    error: 'Not found.',
-    code: 'NOT_FOUND',
+function requirePanelModeratorHidden(req, res, next) {
+  if (isPanelModerator(req)) return next();
+
+  logBlockedPanelModeratorAccess(req);
+  return res.status(403).json({
+    error: 'Only Panel Moderator can access this.',
+    code: 'PANEL_MODERATOR_REQUIRED',
   });
 }
 
 module.exports = {
-  DEFAULT_STAFF_MANAGER_ROLE_IDS,
-  STAFF_MANAGER_ROLE_IDS,
-  configuredStaffManagerRoleIds,
-  isStaffManager,
-  requireStaffManager,
-  requireStaffManagerHidden,
+  DEFAULT_PANEL_MODERATOR_ROLE_NAMES,
+  PANEL_MODERATOR_ROLE_IDS,
+  configuredPanelModeratorRoleIds,
+  isPanelModerator,
+  requirePanelModerator,
+  requirePanelModeratorHidden,
 };
