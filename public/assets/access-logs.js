@@ -4,6 +4,30 @@
   const CORE_SRC = '/assets/access-logs-core.js';
   let panelModeratorAccess = false;
 
+  function applyGTAPinasBranding() {
+    document.title = 'GTA Pinas Roleplay Panel';
+
+    document.querySelectorAll('.brand-copy h2').forEach((element) => {
+      if (element.textContent.trim() === '5th Avenue') element.textContent = 'GTA Pinas';
+    });
+
+    document.querySelectorAll('.brand-mark').forEach((element) => {
+      element.setAttribute('aria-label', 'GTA Pinas');
+      const image = element.querySelector('img');
+      if (image) image.alt = 'GTA Pinas logo';
+      const fallback = element.querySelector('span[aria-hidden="true"]');
+      if (fallback && fallback.textContent.trim() === '5') fallback.textContent = 'G';
+    });
+
+    document.querySelectorAll('.server-identity strong').forEach((element) => {
+      if (element.textContent.trim() === '5th Avenue Roleplay') element.textContent = 'GTA Pinas Roleplay';
+    });
+
+    document.querySelectorAll('.watermark').forEach((element) => {
+      if (element.textContent.trim() === '5th Avenue Roleplay') element.textContent = 'GTA Pinas Roleplay';
+    });
+  }
+
   function loadCore() {
     if (window.__accessLogsCoreLoaded || document.querySelector(`script[src="${CORE_SRC}"]`)) return;
     window.__accessLogsCoreLoaded = true;
@@ -191,12 +215,14 @@
   function boot() {
     loadCore();
     loadPanelModeratorAccess();
+    applyGTAPinasBranding();
     exposeAccessLogsNavigation();
     installRestrictedManagementGuard();
     installSidebarLayout();
 
     if (document.body) {
       const observer = new MutationObserver(() => {
+        applyGTAPinasBranding();
         exposeAccessLogsNavigation();
         installSidebarLayout();
       });
