@@ -182,14 +182,7 @@
     return events.filter(event => {
       if (filter !== 'all' && event.eventType !== filter) return false;
       if (!query) return true;
-      const haystack = [
-        event.username,
-        event.userId,
-        event.ipAddress,
-        event.eventType,
-        eventDetails(event),
-        event.userAgent,
-      ].join(' ').toLowerCase();
+      const haystack = [event.username, event.userId, event.ipAddress, event.eventType, eventDetails(event), event.userAgent].join(' ').toLowerCase();
       return haystack.includes(query);
     });
   }
@@ -235,7 +228,6 @@
   }
 
   window.loadAccessLogs = async function loadAccessLogs(options = {}) {
-    if (typeof panelOwnerToolsEnabled === 'undefined' || panelOwnerToolsEnabled !== true) return;
     const quiet = Boolean(options.quiet);
     const force = Boolean(options.force);
     if (accessLogsLoading) return;
@@ -314,8 +306,7 @@
       const view = document.getElementById('view-transcripts');
       if (!view) return;
 
-      view.querySelectorAll('.transcript-meta-panel, #transcript-meta-panel, .transcript-metadata-panel, #transcript-metadata-panel')
-        .forEach(element => element.remove());
+      view.querySelectorAll('.transcript-meta-panel, #transcript-meta-panel, .transcript-metadata-panel, #transcript-metadata-panel').forEach(element => element.remove());
 
       const workspace = view.querySelector('.transcript-workspace');
       if (workspace) {
