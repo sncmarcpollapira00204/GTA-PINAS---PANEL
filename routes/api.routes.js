@@ -11,10 +11,9 @@ const staffPerformanceController = require('../controllers/staffPerformance.cont
 const accessLogsController = require('../controllers/accessLogs.controller');
 const mediaController = require('../controllers/media.controller');
 const staffManagementController = require('../controllers/staffManagement.controller');
-const { requirePanelOwnerHidden } = require('../middleware/owner.middleware');
 const { requireStaffPerformanceAccess } = require('../middleware/staffPerformance.middleware');
 const { requireMediaManager } = require('../middleware/mediaManager.middleware');
-const { requireStaffManagerHidden } = require('../middleware/staffManagement.middleware');
+const { requirePanelModeratorHidden } = require('../middleware/staffManagement.middleware');
 const { requireTicketReadAccess } = require('../middleware/ticketAccess.middleware');
 
 const router = express.Router();
@@ -39,10 +38,10 @@ router.get('/v2/tickets/:id/logs', requireTicketReadAccess, optimizedController.
 
 router.get('/staff', staffController.getStaffProfiles);
 router.get('/staff/performance', requireStaffPerformanceAccess, staffPerformanceController.getStaffPerformance);
-router.get('/access-logs', requirePanelOwnerHidden, accessLogsController.getAccessLogs);
+router.get('/access-logs', requirePanelModeratorHidden, accessLogsController.getAccessLogs);
 
-router.get('/staff-management', requireStaffManagerHidden, staffManagementController.list);
-router.delete('/staff-management/:discordId', requireStaffManagerHidden, staffManagementController.remove);
+router.get('/staff-management', requirePanelModeratorHidden, staffManagementController.list);
+router.delete('/staff-management/:discordId', requirePanelModeratorHidden, staffManagementController.remove);
 
 router.get('/media/settings', mediaController.getSettings);
 router.put('/media/:slot', requireMediaManager, mediaUploadParser, mediaController.upload);
